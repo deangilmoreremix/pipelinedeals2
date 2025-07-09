@@ -189,6 +189,20 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
     }
   };
 
+  const handleFindImageClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onFindNewImage || isFinding) return;
+    
+    setIsFinding(true);
+    try {
+      await onFindNewImage(deal);
+    } catch (error) {
+      console.error('Failed to find new image:', error);
+    } finally {
+      setIsFinding(false);
+    }
+  };
+
   // Get social profiles (mock data if not provided)
   const socialProfiles = deal.socialProfiles || {
     linkedin: deal.company ? `https://linkedin.com/company/${deal.company.toLowerCase().replace(/\s+/g, '-')}` : undefined,
@@ -208,6 +222,9 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
     { icon: Twitter, color: 'bg-blue-400', name: 'Twitter', key: 'twitter' },
     { icon: Facebook, color: 'bg-blue-700', name: 'Facebook', key: 'facebook' },
   ];
+
+  const analyzing = isAnalyzing || localAnalyzing;
+  const enriching = localEnriching;
 
   return (
     <div
@@ -687,6 +704,6 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
       </div>
     </div>
   );
-};
+}
 
 export default AIEnhancedDealCard;
