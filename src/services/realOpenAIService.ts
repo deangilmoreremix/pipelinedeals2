@@ -150,7 +150,7 @@ class RealOpenAIService implements OpenAIService {
         ${contact.name} - ${contact.title} at ${contact.company}
         Status: ${contact.status}
         Interest: ${contact.interestLevel}
-        Sources: ${contact.sources.join(', ')}
+        Sources: ${(contact.sources || []).join(', ')}
         
         Provide actionable insights as a JSON array of strings.
         Focus on sales strategy, timing, and approach recommendations.
