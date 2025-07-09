@@ -186,25 +186,6 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
       await onToggleFavorite(deal);
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
-    }
-  };
-
-  const handleFindImageClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!onFindNewImage || isFinding) return;
-    
-    setIsFinding(true);
-    try {
-      await onFindNewImage(deal);
-    } catch (error) {
-      console.error('Failed to find new image:', error);
-    } finally {
-      setIsFinding(false);
-    }
-  };
-
-  const analyzing = isAnalyzing || localAnalyzing;
-  const enriching = localEnriching;
 
   // Get social profiles (mock data if not provided)
   const socialProfiles = deal.socialProfiles || {
