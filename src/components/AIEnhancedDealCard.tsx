@@ -12,42 +12,6 @@ import {
   Zap,
   TrendingUp,
   Edit,
-  MoreHorizontal,
-  Mail,
-  Phone,
-  MessageSquare,
-  Star,
-  Target,
-  BarChart3,
-  ThumbsUp,
-  ThumbsDown,
-  Brain,
-  Loader2,
-  Sparkles,
-  Heart,
-  Wand2,
-  Camera,
-  Database,
-  Globe,
-  ExternalLink,
-  Plus,
-  Search,
-  Linkedin,
-  Twitter,
-  Facebook,
-  ArrowRight,
-  Activity
-  Camera,
-  Database,
-  Globe,
-  ExternalLink,
-  Plus,
-  Search,
-  Linkedin,
-  Twitter,
-  Facebook,
-  ArrowRight,
-  Activity
 } from 'lucide-react';
 
 interface AIEnhancedDealCardProps {
@@ -58,10 +22,7 @@ interface AIEnhancedDealCardProps {
   showAnalyzeButton?: boolean;
   onAnalyze?: (deal: Deal) => Promise<boolean>;
   onAIEnrich?: (deal: Deal) => Promise<boolean>;
-  onAIEnrich?: (deal: Deal) => Promise<boolean>;
   isAnalyzing?: boolean;
-  onToggleFavorite?: (deal: Deal) => Promise<void>;
-  onFindNewImage?: (deal: Deal) => Promise<void>;
   onToggleFavorite?: (deal: Deal) => Promise<void>;
   onFindNewImage?: (deal: Deal) => Promise<void>;
 }
@@ -74,18 +35,12 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
   showAnalyzeButton = true,
   onAnalyze,
   onAIEnrich,
-  onAIEnrich,
   isAnalyzing = false,
-  onToggleFavorite,
-  onFindNewImage
   onToggleFavorite,
   onFindNewImage
 }) => {
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [localAnalyzing, setLocalAnalyzing] = useState(false);
-  const [localEnriching, setLocalEnriching] = useState(false);
-  const [isFinding, setIsFinding] = useState(false);
-  const [showCustomFields, setShowCustomFields] = useState(false);
   const [localEnriching, setLocalEnriching] = useState(false);
   const [isFinding, setIsFinding] = useState(false);
   const [showCustomFields, setShowCustomFields] = useState(false);
@@ -96,10 +51,6 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
     deal.lastEnrichment || (deal.probability > 75 ? { confidence: deal.probability } : null)
   );
 
-  // New state to track AI enrichment status
-  const [lastEnrichment, setLastEnrichment] = useState<any>(
-    deal.lastEnrichment || (deal.probability > 75 ? { confidence: deal.probability } : null)
-  );
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', { 
@@ -223,50 +174,6 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
   };
 
   const handleFindImageClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!onFindNewImage || isFinding) return;
-    
-    setIsFinding(true);
-    try {
-      await onFindNewImage(deal);
-    } catch (error) {
-      console.error('Failed to find new image:', error);
-    } finally {
-      setIsFinding(false);
-    }
-  };
-
-  const handleAIEnrichClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!onAIEnrich || localEnriching) return;
-    
-    setLocalEnriching(true);
-    try {
-      await onAIEnrich(deal);
-      setLastEnrichment({ 
-        confidence: Math.min(deal.probability + 10, 95),
-        aiProvider: 'OpenAI GPT-4o',
-        timestamp: new Date()
-      });
-    } catch (error) {
-      console.error('Enrichment failed:', error);
-    } finally {
-      setLocalEnriching(false);
-    }
-  };
-
-  const handleFavoriteClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!onToggleFavorite) return;
-    
-    try {
-      await onToggleFavorite(deal);
-    } catch (error) {
-      console.error('Failed to toggle favorite:', error);
-    }
-  };
-
-  const handleFindNewImage = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!onFindNewImage || isFinding) return;
     
