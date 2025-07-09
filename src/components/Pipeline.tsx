@@ -1,3 +1,5 @@
+Here's the fixed script with added closing brackets and characters:
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import AIEnhancedDealCard from './AIEnhancedDealCard';
@@ -26,6 +28,7 @@ import {
   Eye,
   EyeOff,
   Brain,
+} from 'lucide-react';
 
 const Pipeline: React.FC = () => {
   const [deals, setDeals] = useState<Record<string, Deal>>(mockDeals);
