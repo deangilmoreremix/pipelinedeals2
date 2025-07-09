@@ -65,7 +65,7 @@ class RealGeminiService implements GeminiService {
         }],
         generationConfig: {
           temperature: 0.7,
-          topK: model.category === 'gemma' ? 40 : 64,
+          topK: model.family === 'gemma' ? 40 : 64,
           topP: 0.95,
           maxOutputTokens: Math.min(model.maxTokens, 2048),
         },
@@ -146,10 +146,10 @@ class RealGeminiService implements GeminiService {
         }
         
         Base the score on factors like company size, industry, contact seniority, engagement level, and data completeness.
-        ${model?.category === 'gemma' ? 'Focus on clear, actionable insights that directly help with sales strategy.' : ''}
+        ${model?.family === 'gemma' ? 'Focus on clear, actionable insights that directly help with sales strategy.' : ''}
       `;
 
-      const systemInstruction = `You are an expert sales analyst using ${model?.name || selectedModelId}. Provide detailed, actionable insights about sales contacts that will help close more deals. ${model?.category === 'gemma' ? 'Be concise and practical in your analysis.' : 'Provide comprehensive analysis with deep insights.'}`;
+      const systemInstruction = `You are an expert sales analyst using ${model?.name || selectedModelId}. Provide detailed, actionable insights about sales contacts that will help close more deals. ${model?.family === 'gemma' ? 'Be concise and practical in your analysis.' : 'Provide comprehensive analysis with deep insights.'}`;
       
       const response = await this.makeRequest(prompt, systemInstruction, selectedModelId);
       
@@ -190,7 +190,7 @@ class RealGeminiService implements GeminiService {
         6. Matches their interest level (${contact.interestLevel})
         
         Format as a complete email with subject line.
-        ${model?.category === 'gemma' ? 'Keep the email concise and direct.' : ''}
+        ${model?.family === 'gemma' ? 'Keep the email concise and direct.' : ''}
       `;
 
       const systemInstruction = `You are an expert sales copywriter using ${model?.name || selectedModelId}. Write high-converting, personalized sales emails that get responses and drive action while maintaining professionalism.`;
@@ -208,7 +208,7 @@ class RealGeminiService implements GeminiService {
       const selectedModelId = this.getModelId(modelId);
       const model = getModelById(selectedModelId);
       
-      const maxInsights = model?.category === 'gemma' ? 4 : 6;
+      const maxInsights = model?.family === 'gemma' ? 4 : 6;
       
       const prompt = `
         Generate ${maxInsights} actionable insights about this sales contact:
@@ -217,12 +217,12 @@ class RealGeminiService implements GeminiService {
         Status: ${contact.status}
         Interest: ${contact.interestLevel}
         Industry: ${contact.industry || 'Unknown'}
-        Sources: ${contact.sources.join(', ')}
+        Sources: ${(contact.sources || []).join(', ')}
         
         Provide insights as a JSON array of strings.
         Focus on sales strategy, timing, approach recommendations, and potential opportunities.
         Each insight should be specific and actionable.
-        ${model?.category === 'gemma' ? 'Keep insights concise and practical.' : ''}
+        ${model?.family === 'gemma' ? 'Keep insights concise and practical.' : ''}
       `;
 
       const systemInstruction = `You are a sales strategist using ${model?.name || selectedModelId} with expertise in B2B relationship building and deal closure. Provide specific, actionable insights that sales teams can immediately implement.`;
@@ -258,7 +258,7 @@ class RealGeminiService implements GeminiService {
         - Potential risks or challenges
         - Critical next steps
         - Timeline considerations
-        ${model?.category === 'gemma' ? 'Keep the summary concise and focused on actionable items.' : ''}
+        ${model?.family === 'gemma' ? 'Keep the summary concise and focused on actionable items.' : ''}
       `;
 
       const systemInstruction = `You are a sales manager using ${model?.name || selectedModelId} with expertise in deal analysis and pipeline management. Create clear, actionable deal summaries that help sales teams focus on what matters most.`;
@@ -276,7 +276,7 @@ class RealGeminiService implements GeminiService {
       const selectedModelId = this.getModelId(modelId);
       const model = getModelById(selectedModelId);
       
-      const maxActions = model?.category === 'gemma' ? 4 : 6;
+      const maxActions = model?.family === 'gemma' ? 4 : 6;
       
       const prompt = `
         Suggest ${maxActions} specific next actions for this deal:
@@ -295,7 +295,7 @@ class RealGeminiService implements GeminiService {
         - Increase probability of closure
         - Address any potential risks
         - Maintain momentum
-        ${model?.category === 'gemma' ? 'Make actions specific and immediately actionable.' : ''}
+        ${model?.family === 'gemma' ? 'Make actions specific and immediately actionable.' : ''}
       `;
 
       const systemInstruction = `You are a sales coach using ${model?.name || selectedModelId} with expertise in deal progression and closing strategies. Suggest specific actions that sales teams can take immediately to advance deals.`;
@@ -333,7 +333,7 @@ class RealGeminiService implements GeminiService {
           "competitiveLandscape": ["main competitors"],
           "recentTrends": ["industry trends affecting this company"]
         }
-        ${model?.category === 'gemma' ? 'Focus on actionable business intelligence.' : ''}
+        ${model?.family === 'gemma' ? 'Focus on actionable business intelligence.' : ''}
       `;
 
       const systemInstruction = `You are a business intelligence analyst using ${model?.name || selectedModelId} with expertise in company research and competitive analysis. Provide detailed, accurate information that helps sales teams understand prospects better.`;
@@ -370,7 +370,7 @@ class RealGeminiService implements GeminiService {
           "emailTips": ["subject line suggestions", "email structure"],
           "meetingTopics": ["discussion points for first meeting"]
         }
-        ${model?.category === 'gemma' ? 'Focus on practical, immediately actionable advice.' : ''}
+        ${model?.family === 'gemma' ? 'Focus on practical, immediately actionable advice.' : ''}
       `;
 
       const systemInstruction = `You are a sales development expert using ${model?.name || selectedModelId} with deep knowledge of B2B outreach and relationship building. Provide strategic advice for connecting with prospects effectively.`;
@@ -396,7 +396,7 @@ class RealGeminiService implements GeminiService {
     if (contact.status === 'customer') score += 20;
     else if (contact.status === 'prospect') score += 10;
 
-    if (contact.sources.includes('Referral')) score += 15;
+    if (contact.sources && contact.sources.includes('Referral')) score += 15;
     if (contact.customFields && Object.keys(contact.customFields).length > 0) score += 10;
 
     insights.push('Analysis completed with available data');
@@ -427,7 +427,7 @@ Best regards,
       insights.push('🔥 High interest level - priority for immediate follow-up');
     }
     
-    if (contact.sources.includes('Referral')) {
+    if (contact.sources && contact.sources.includes('Referral')) {
       insights.push('🤝 Referral source indicates higher trust and conversion potential');
     }
     
