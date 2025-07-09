@@ -186,6 +186,8 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
       await onToggleFavorite(deal);
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
+    }
+  };
 
   // Get social profiles (mock data if not provided)
   const socialProfiles = deal.socialProfiles || {
