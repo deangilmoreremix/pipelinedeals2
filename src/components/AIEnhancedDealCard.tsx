@@ -37,6 +37,17 @@ import {
   Facebook,
   ArrowRight,
   Activity
+  Camera,
+  Database,
+  Globe,
+  ExternalLink,
+  Plus,
+  Search,
+  Linkedin,
+  Twitter,
+  Facebook,
+  ArrowRight,
+  Activity
 } from 'lucide-react';
 
 interface AIEnhancedDealCardProps {
@@ -47,7 +58,10 @@ interface AIEnhancedDealCardProps {
   showAnalyzeButton?: boolean;
   onAnalyze?: (deal: Deal) => Promise<boolean>;
   onAIEnrich?: (deal: Deal) => Promise<boolean>;
+  onAIEnrich?: (deal: Deal) => Promise<boolean>;
   isAnalyzing?: boolean;
+  onToggleFavorite?: (deal: Deal) => Promise<void>;
+  onFindNewImage?: (deal: Deal) => Promise<void>;
   onToggleFavorite?: (deal: Deal) => Promise<void>;
   onFindNewImage?: (deal: Deal) => Promise<void>;
 }
@@ -60,7 +74,10 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
   showAnalyzeButton = true,
   onAnalyze,
   onAIEnrich,
+  onAIEnrich,
   isAnalyzing = false,
+  onToggleFavorite,
+  onFindNewImage
   onToggleFavorite,
   onFindNewImage
 }) => {
@@ -69,7 +86,15 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
   const [localEnriching, setLocalEnriching] = useState(false);
   const [isFinding, setIsFinding] = useState(false);
   const [showCustomFields, setShowCustomFields] = useState(false);
+  const [localEnriching, setLocalEnriching] = useState(false);
+  const [isFinding, setIsFinding] = useState(false);
+  const [showCustomFields, setShowCustomFields] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // New state to track AI enrichment status
+  const [lastEnrichment, setLastEnrichment] = useState<any>(
+    deal.lastEnrichment || (deal.probability > 75 ? { confidence: deal.probability } : null)
+  );
 
   // New state to track AI enrichment status
   const [lastEnrichment, setLastEnrichment] = useState<any>(
@@ -155,6 +180,11 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
         aiProvider: 'Hybrid AI (GPT-4o + Gemini)',
         timestamp: new Date()
       });
+      setLastEnrichment({ 
+        confidence: Math.max(deal.probability, 75),
+        aiProvider: 'Hybrid AI (GPT-4o + Gemini)',
+        timestamp: new Date()
+      });
     } catch (error) {
       console.error('Analysis failed:', error);
     } finally {
@@ -206,7 +236,72 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
     }
   };
 
+  const handleAIEnrichClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onAIEnrich || localEnriching) return;
+    
+    setLocalEnriching(true);
+    try {
+      await onAIEnrich(deal);
+      setLastEnrichment({ 
+        confidence: Math.min(deal.probability + 10, 95),
+        aiProvider: 'OpenAI GPT-4o',
+        timestamp: new Date()
+      });
+    } catch (error) {
+      console.error('Enrichment failed:', error);
+    } finally {
+      setLocalEnriching(false);
+    }
+  };
+
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onToggleFavorite) return;
+    
+    try {
+      await onToggleFavorite(deal);
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
+  };
+
+  const handleFindNewImage = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onFindNewImage || isFinding) return;
+    
+    setIsFinding(true);
+    try {
+      await onFindNewImage(deal);
+    } catch (error) {
+      console.error('Failed to find new image:', error);
+    } finally {
+      setIsFinding(false);
+    }
+  };
+
   const analyzing = isAnalyzing || localAnalyzing;
+  const enriching = localEnriching;
+
+  // Get social profiles (mock data if not provided)
+  const socialProfiles = deal.socialProfiles || {
+    linkedin: deal.company ? `https://linkedin.com/company/${deal.company.toLowerCase().replace(/\s+/g, '-')}` : undefined,
+    website: deal.company ? `https://${deal.company.toLowerCase().replace(/\s+/g, '')}.com` : undefined
+  };
+
+  // Custom fields (mock data if not provided)
+  const customFields = deal.customFields || {
+    "Deal Source": deal.tags?.[0] || "Direct",
+    "Account Manager": "Alex Rivera"
+  };
+
+  // Social platform definitions
+  const socialPlatforms = [
+    { icon: Linkedin, color: 'bg-blue-500', name: 'LinkedIn', key: 'linkedin' },
+    { icon: Globe, color: 'bg-purple-600', name: 'Website', key: 'website' },
+    { icon: Twitter, color: 'bg-blue-400', name: 'Twitter', key: 'twitter' },
+    { icon: Facebook, color: 'bg-blue-700', name: 'Facebook', key: 'facebook' },
+  ];
   const enriching = localEnriching;
 
   // Get social profiles (mock data if not provided)
@@ -310,6 +405,66 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
         </button>
       </div>
 
+      {/* Header Actions */}
+      <div className="absolute top-4 right-4 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+        {/* AI Analysis Button - Prominently Featured */}
+        {onAnalyze && showAnalyzeButton && (
+          <button 
+            onClick={handleAnalyzeClick}
+            disabled={analyzing}
+            className={`p-2 rounded-lg transition-all duration-200 relative ${
+              deal.probability > 70
+                ? 'bg-purple-100 text-purple-600 hover:bg-purple-200' 
+                : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 shadow-lg'
+            }`}
+            title={deal.probability > 70 ? 'Re-analyze with AI' : 'Analyze with AI'}
+          >
+            {analyzing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Brain className="w-4 h-4" />
+            )}
+            {deal.probability < 70 && !analyzing && (
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+            )}
+          </button>
+        )}
+        
+        {/* Favorite Button */}
+        {onToggleFavorite && (
+          <button
+            onClick={handleFavoriteClick}
+            className={`p-2 rounded-lg transition-colors ${
+              deal.isFavorite 
+                ? 'text-red-500 hover:bg-red-50' 
+                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+            }`}
+            title={deal.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <Heart className={`w-4 h-4 ${deal.isFavorite ? 'fill-current' : ''}`} />
+          </button>
+        )}
+        
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            // Handle edit action
+          }}
+          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <Edit className="w-3 h-3" />
+        </button>
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            // Handle more actions
+          }}
+          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <MoreHorizontal className="w-3 h-3" />
+        </button>
+      </div>
+
       <div className="p-6">
         {/* Company and Person Avatars with Deal Info */}
         <div className="flex items-start justify-between mb-4 mt-4">
@@ -342,6 +497,21 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
                     )}
                   </button>
                 )}
+                {/* Image search button */}
+                {onFindNewImage && (
+                  <button
+                    onClick={handleFindImageClick}
+                    disabled={isFinding}
+                    className="absolute -bottom-1 -right-1 p-0.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-sm"
+                    title="Find company image"
+                  >
+                    {isFinding ? (
+                      <div className="w-2 h-2 border border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Camera className="w-2 h-2" />
+                    )}
+                  </button>
+                )}
               </div>
               <div>
                 <p className="text-gray-600 text-sm font-medium">{deal.company}</p>
@@ -356,6 +526,20 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
                   alt={deal.contact}
                   className="w-6 h-6 rounded-full border border-gray-200"
                 />
+                
+                {/* Image search button */}
+                {onFindNewImage && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Handle contact image search
+                    }}
+                    className="absolute -bottom-1 -right-1 p-0.5 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors shadow-sm"
+                    title="Find contact image"
+                  >
+                    <Camera className="w-2 h-2" />
+                  </button>
+                )}
                 
                 {/* Image search button */}
                 {onFindNewImage && (
@@ -450,6 +634,31 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             </div>
           </div>
         </div>
+        
+        {/* AI Enhancement Notice - New Feature */}
+        {lastEnrichment && (
+          <div className="mb-4 p-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200 shadow-sm">
+            <div className="flex items-center justify-center space-x-2">
+              <Sparkles className="w-3 h-3 text-purple-500" />
+              <span className="text-xs font-medium text-purple-800">
+                AI Enhanced{lastEnrichment.aiProvider ? ` (${lastEnrichment.aiProvider})` : ''}
+              </span>
+              {lastEnrichment.confidence && (
+                <span className="text-xs text-purple-600">
+                  ({lastEnrichment.confidence}% confidence)
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Priority Level */}
+        <div className="flex items-center justify-center space-x-2 mb-4">
+          <div className={`w-2 h-2 rounded-full ${getPriorityColor(deal.priority)} animate-pulse`} />
+          <span className="text-xs text-gray-600 font-medium">
+            {getPriorityLabel(deal.priority)}
+          </span>
+        </div>
 
         {/* Progress Dots */}
         <div className="flex items-center justify-center space-x-1 mb-4">
@@ -484,6 +693,53 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             <p className="text-xs mt-1">{deal.dueDate.toLocaleDateString()}</p>
           </div>
         )}
+
+        {/* AI Tools Section - NEW ENHANCED FEATURE */}
+        <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200 shadow-sm">
+          <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center justify-center">
+            <Brain className="w-3 h-3 mr-1 text-purple-600" />
+            AI Assistant Tools
+          </h4>
+          
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {/* Lead Score */}
+            <button 
+              onClick={handleAnalyzeClick}
+              disabled={analyzing}
+              className="p-2 flex flex-col items-center justify-center rounded-lg text-xs font-medium transition-all duration-200 border shadow-sm hover:shadow-md hover:scale-105 bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 border-blue-300/50"
+            >
+              {analyzing ? (
+                <Loader2 className="w-3 h-3 animate-spin mb-0.5" />
+              ) : (
+                <Target className="w-3 h-3 mb-0.5" />
+              )}
+              <span className="text-[10px]">Score</span>
+            </button>
+            
+            {/* Email AI */}
+            <button className="p-2 flex flex-col items-center justify-center rounded-lg text-xs font-medium transition-all duration-200 border shadow-sm hover:shadow-md hover:scale-105 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 border-gray-200/50">
+              <Mail className="w-3 h-3 mb-0.5" />
+              <span className="text-[10px]">Email</span>
+            </button>
+            
+            {/* AI Auto-Enrich */}
+            <button
+              onClick={handleAIEnrichClick}
+              disabled={localEnriching}
+              className="p-2 flex flex-col items-center justify-center rounded-lg text-xs font-medium transition-all duration-200 border shadow-sm hover:shadow-md hover:scale-105 bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 border-purple-300/50 col-span-2 relative"
+            >
+              {localEnriching ? (
+                <Loader2 className="w-3 h-3 animate-spin mb-0.5" />
+              ) : (
+                <Wand2 className="w-3 h-3 mb-0.5" />
+              )}
+              <span className="text-[10px]">AI Auto-Enrich</span>
+              {!localEnriching && (
+                <Sparkles className="w-2 h-2 absolute top-1 right-1 text-yellow-300" />
+              )}
+            </button>
+          </div>
+        </div>
 
         {/* AI Tools Section - NEW ENHANCED FEATURE */}
         <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200 shadow-sm">
@@ -570,6 +826,75 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
                 Custom Fields
               </h4>
               <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCustomFields(!showCustomFields);
+                }}
+                className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showCustomFields ? <ArrowRight className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {Object.entries(customFields).slice(0, showCustomFields ? Object.keys(customFields).length : 2).map(([key, value], index) => (
+                <div key={index} className="bg-white p-1.5 rounded border border-gray-100">
+                  <p className="text-gray-500 text-[10px]">{key}</p>
+                  <p className="text-gray-700 font-medium truncate">{value as string}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Social Profiles - NEW FEATURE */}
+        {socialProfiles && Object.values(socialProfiles).some(Boolean) && (
+          <div className="mb-4">
+            <div className="flex justify-center space-x-2">
+              {socialPlatforms.map((platform, index) => {
+                const Icon = platform.icon;
+                const profileUrl = socialProfiles[platform.key as keyof typeof socialProfiles];
+                
+                if (!profileUrl) return null;
+                
+                return (
+                  <a 
+                    key={index}
+                    href={profileUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className={`p-1.5 ${platform.color} rounded-lg text-white hover:opacity-90 transition-all`}
+                    title={platform.name}
+                  >
+                    <Icon className="w-3 h-3" />
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Last Activity - NEW FEATURE */}
+        {deal.lastActivity && (
+          <div className="mb-4 p-2 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center justify-center space-x-2">
+              <Activity className="w-3 h-3 text-blue-500" />
+              <p className="text-xs text-gray-600">
+                <span className="font-medium">Last Activity:</span> {deal.lastActivity}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Custom Fields - NEW FEATURE */}
+        {customFields && Object.keys(customFields).length > 0 && (
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-xs font-semibold text-gray-700 flex items-center">
+                <Database className="w-3 h-3 mr-1 text-gray-500" />
+                Custom Fields
+              </h4>
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowCustomFields(!showCustomFields);

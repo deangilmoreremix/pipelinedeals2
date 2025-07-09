@@ -48,6 +48,7 @@ import {
   Search,
   Wand2,
   Users,
+  ZapOff,
 } from 'lucide-react';
 
 interface DealDetailViewProps {
@@ -78,6 +79,7 @@ export const DealDetailView: React.FC<DealDetailViewProps> = ({
   const [newLink, setNewLink] = useState({ title: '', url: '' });
   const [newTag, setNewTag] = useState('');
   const [newCustomField, setNewCustomField] = useState({ name: '', value: '' });
+  const [isFavorite, setIsFavorite] = useState(deal.isFavorite || false);
   
   // Create refs for file inputs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -212,9 +214,18 @@ export const DealDetailView: React.FC<DealDetailViewProps> = ({
   };
 
   const handleToggleFavorite = async () => {
-    const isFavorite = !formData.isFavorite;
-    setFormData(prev => ({ ...prev, isFavorite }));
-    await onUpdate(deal.id, { isFavorite });
+    try {
+      setIsFavorite(!isFavorite);
+      
+      if (onUpdate) {
+        await onUpdate(deal.id, {
+          isFavorite: !isFavorite
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update favorite status:', error);
+      setIsFavorite(isFavorite); // Revert on error
+    }
   };
   
   const handleFindNewImage = async () => {
@@ -363,14 +374,102 @@ Sales Approach: ${companyData.salesApproach}
         {/* Left Side - Deal Profile */}
         <div className="w-2/5 bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col max-h-[95vh]">
           {/* Fixed Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white/50 backdrop-blur-sm">
-            <h1 className="text-2xl font-bold text-gray-900">Deal Profile</h1>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+          <div className="p-6 border-b border-gray-200 bg-white">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="relative h-12 w-12">
+                  {deal.companyAvatar ? (
+                    <img 
+                      src={deal.companyAvatar} 
+                      alt={deal.company}
+                      className="h-full w-full rounded-lg object-cover border border-gray-200"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                      <Building2 className="h-6 w-6" />
+                    </div>
+                  )}
+                  
+                  {/* AI Enhanced Badge */}
+                  {deal.lastEnrichment && (
+                    <div className="absolute -top-1 -right-1 h-4 w-4 bg-purple-500 rounded-full flex items-center justify-center">
+                      <Sparkles className="h-2 w-2 text-white" />
+                    </div>
+                  )}
+               </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">{deal.title}</h2>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
+                      <Building2 className="w-3 h-3 text-gray-500" />
+                      <span className="text-gray-600">{deal.company}</span>
+                    </div>
+                    <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      deal.stage === 'qualification' ? 'bg-blue-100 text-blue-800' :
+                      deal.stage === 'proposal' ? 'bg-indigo-100 text-indigo-800' :
+                      deal.stage === 'negotiation' ? 'bg-purple-100 text-purple-800' :
+                      deal.stage === 'closed-won' ? 'bg-green-100 text-green-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {deal.stage.replace('-', ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
+                    </div>
+                    {/* Deal Value */}
+                    <div className="flex items-center space-x-1">
+                      <DollarSign className="w-3 h-3 text-green-500" />
+                      <span className="text-green-600 font-medium text-xs">
+                        {new Intl.NumberFormat('en-US', { 
+                          style: 'currency', 
+                          currency: 'USD',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        }).format(deal.value)}
+                      </span>
+                    </div>
+                    {/* Probability Badge */}
+                    <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      deal.probability >= 80 ? 'bg-green-100 text-green-800' :
+                      deal.probability >= 60 ? 'bg-blue-100 text-blue-800' :
+                      deal.probability >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {deal.probability}% Probability
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                {/* Favorite Button */}
+                <button
+                  onClick={handleToggleFavorite}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isFavorite 
+                      ? 'text-red-500 hover:bg-red-50' 
+                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                  }`}
+                  title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+                </button>
+                
+                {/* AI Analysis Button */}
+                <ModernButton 
+                  onClick={() => setActiveTab('insights')}
+                  size="sm"
+                  variant="outline"
+                  className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 text-purple-700 hover:bg-gradient-to-r hover:from-purple-100 hover:to-blue-100"
+                  leftIcon={<Brain className="w-4 h-4" />}
+                >
+                  AI Insights
+                </ModernButton>
+                
+                <button
+                  onClick={onClose}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Scrollable Content */}
@@ -1295,10 +1394,10 @@ Sales Approach: ${companyData.salesApproach}
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center space-x-1 ${
+                  className={`flex items-center space-x-1 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === tab.id 
-                      ? 'bg-blue-100 text-blue-700' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      ? 'border-blue-600 text-blue-600' 
+                      : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
                   }`}
                 >
                   <tab.icon className="w-4 h-4" />
@@ -1567,7 +1666,7 @@ Sales Approach: ${companyData.salesApproach}
             
             {/* Communication Tab */}
             {activeTab === 'communication' && (
-              <DealCommunicationHub deal={deal} contact={contactData || null} />
+              <DealCommunicationHub deal={deal} contact={contactData} />
             )}
             
             {/* Analytics Tab */}
