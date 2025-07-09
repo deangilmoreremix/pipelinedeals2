@@ -276,7 +276,8 @@ const Pipeline: React.FC = () => {
   const handleToggleFavorite = async (deal: Deal) => {
     const updatedDeal = {
       ...deal,
-      isFavorite: !deal.isFavorite
+      isFavorite: !deal.isFavorite,
+      updatedAt: new Date()
     };
     
     setDeals(prev => ({
@@ -290,7 +291,7 @@ const Pipeline: React.FC = () => {
       // Simulate finding a new image
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      // For demo, just use a different seed for the avatar
+      // For demo, use a different seed for the avatar
       const newSeed = Date.now().toString();
       const newAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${newSeed}&backgroundColor=3b82f6,8b5cf6,f59e0b,10b981,ef4444&textColor=ffffff`;
       
@@ -503,7 +504,10 @@ const Pipeline: React.FC = () => {
                                         showAnalyzeButton={true}
                                         onAnalyze={handleAnalyzeDeal}
                                         onAIEnrich={handleEnrichDeal}
+                                        onAIEnrich={handleEnrichDeal}
                                         isAnalyzing={analyzingDealId === deal.id}
+                                        onToggleFavorite={handleToggleFavorite}
+                                        onFindNewImage={handleFindNewImage}
                                         onAIEnrich={handleEnrichDeal}
                                         isEnriching={enrichingDealId === deal.id}
                                         onToggleFavorite={handleToggleFavorite}
