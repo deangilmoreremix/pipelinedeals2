@@ -24,8 +24,8 @@ import {
   Settings,
   Zap,
   Eye,
-  EyeOff
-} from 'lucide-react';
+  EyeOff,
+  Brain,
 
 const Pipeline: React.FC = () => {
   const [deals, setDeals] = useState<Record<string, Deal>>(mockDeals);
