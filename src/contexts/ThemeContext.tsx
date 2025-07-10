@@ -63,7 +63,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!isInitialized) {
       setIsInitialized(true);
     }
-  }, [theme, isDarkMode]);
+  }, [theme, isDarkMode, isInitialized]);
 
   // Accessible toggle function
   const toggleDarkMode = () => {
