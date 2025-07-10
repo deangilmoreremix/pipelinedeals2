@@ -86,5 +86,3 @@ export const DarkModeToggle: React.FC = () => {
     </div>
   );
 };
-  );
-};
