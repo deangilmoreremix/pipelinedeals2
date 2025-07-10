@@ -21,7 +21,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
 
   return (
     <div
-      className={`rounded-xl shadow-lg ${variantClasses[variant]} ${className}`}
+      className={`rounded-xl shadow-lg ${variantClasses[variant]} dark:shadow-gray-900/30 dark:border-gray-700 ${className}`}
       onClick={onClick}
     >
       {children}
