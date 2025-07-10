@@ -10,6 +10,7 @@ import { DealAnalyticsDashboard } from './deals/DealAnalyticsDashboard';
 import { DealAutomationPanel } from './deals/DealAutomationPanel';
 import { ModernButton } from './ui/ModernButton';
 import {
+  Brain,
   X,
   Edit,
   Globe,
@@ -31,7 +32,6 @@ import {
   FileText,
   Target,
   Sparkles,
-  Brain,
   Crown,
   Star,
   Award,
@@ -2020,8 +2020,8 @@ Sales Approach: ${companyData.salesApproach}
                   {deal.lastEnrichment ? (
                     <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-200 p-6 shadow-sm">
                       <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Sparkles className="w-5 h-5 mr-2 text-purple-500" />
-                        AI Enrichment
+                        <Brain className="w-5 h-5 mr-2 text-purple-500" />
+                        AI Enrichment Details
                       </h4>
                       <div className="space-y-3">
                         <div>
