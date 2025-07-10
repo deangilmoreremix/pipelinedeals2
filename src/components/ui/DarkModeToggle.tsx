@@ -35,7 +35,7 @@ export const DarkModeToggle: React.FC = () => {
       <button
         ref={buttonRef}
         onClick={toggleDarkMode}
-        className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900"
+        className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-blue-400 focus:ring-offset-white dark:focus:ring-offset-gray-900"
         aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         aria-pressed={isDarkMode}
         role="switch"
