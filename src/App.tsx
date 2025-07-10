@@ -1,5 +1,5 @@
 import React from 'react';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { PersonalizationProvider } from './contexts/PersonalizationContext';
 import { GamificationProvider } from './contexts/GamificationContext';
 import Pipeline from './components/Pipeline';
