@@ -35,6 +35,12 @@ export const DarkModeToggle: React.FC = () => {
       <button
         ref={buttonRef}
         onClick={toggleDarkMode}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleDarkMode();
+          }
+        }}
         className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-blue-400 focus:ring-offset-white dark:focus:ring-offset-gray-900"
         aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         aria-pressed={isDarkMode}
@@ -53,6 +59,12 @@ export const DarkModeToggle: React.FC = () => {
       {/* Theme options dropdown button */}
       <button
         onClick={() => setIsMenuOpen(!isMenuOpen)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsMenuOpen(!isMenuOpen);
+          }
+        }}
         className="ml-1 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 rounded-md"
         aria-label="More theme options"
         aria-expanded={isMenuOpen}

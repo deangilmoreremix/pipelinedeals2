@@ -27,7 +27,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
 
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
   
   // Helper to set theme with localStorage persistence
   const setTheme = (newTheme: 'light' | 'dark' | 'auto') => {
@@ -53,11 +53,17 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => mediaQuery.removeEventListener('change', updateTheme);
   }, [theme]); 
 
-  // Apply theme to document and mark as initialized
+  // Apply theme to document, set metadata, and mark as initialized
   useEffect(() => {
     // Only apply after we have determined the theme
     localStorage.setItem('theme', theme);
     document.documentElement.classList.toggle('dark', isDarkMode);
+    
+    // Update theme-color meta tag for mobile browsers
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', isDarkMode ? '#121212' : '#ffffff');
+    }
     
     // Prevent flash by marking as initialized after the theme is applied
     if (!isInitialized) {
