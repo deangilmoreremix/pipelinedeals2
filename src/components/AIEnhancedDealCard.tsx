@@ -287,7 +287,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
           </button>
         )}
         
-        <button 
+        <button
           onClick={(e) => {
             e.stopPropagation();
             // Handle edit action
@@ -468,9 +468,9 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
         {/* Due Date Alert */}
         {deal.dueDate && (
           <div className={`mb-4 p-2 rounded-lg text-center ${
-            isOverdue ? 'bg-red-50 text-red-700' :
-            isDueSoon ? 'bg-yellow-50 text-yellow-700' :
-            'bg-green-50 text-green-700'
+            isOverdue ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+            isDueSoon ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+            'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300'
           }`}>
             <div className="flex items-center justify-center space-x-2">
               <Calendar className="w-4 h-4" />
@@ -642,7 +642,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
         {/* Action Buttons */}
         {/* Action Buttons */}
         <div className="grid grid-cols-3 gap-1.5">
-          <button 
+          <button
             onClick={(e) => {
               e.stopPropagation();
               // Handle email action
@@ -651,7 +651,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
           >
             <Mail size={11} className="mr-1" /> Email
           </button>
-          <button 
+          <button
             onClick={(e) => {
               e.stopPropagation();
               // Handle call action
@@ -660,7 +660,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
           >
             <Phone size={11} className="mr-1" /> Call
           </button>
-          <button 
+          <button
             onClick={(e) => {
               e.stopPropagation();
               onClick();
