@@ -135,7 +135,7 @@ export const Toast: React.FC<ToastProps> = ({
           <div className="ml-3 flex-1">
             <p className={`text-sm font-medium ${getTextColor()}`}>
               {title}
-            </p>
+            </p> /* Fixed text color */
             {message && (
               <p className={`mt-1 text-sm ${getTextColor()} opacity-90`}>
                 {message}

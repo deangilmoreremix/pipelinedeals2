@@ -298,7 +298,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
       <div className="p-6">
         {/* Avatar and AI Score Section */}
         <div className="flex items-start justify-between mb-4 mt-4">
-          <div className="text-center flex-1">
+          <div className="text-center flex-1 text-gray-900 dark:text-white">
             <div className="relative inline-block mb-3">
               <AvatarWithStatus
                 src={contact.avatarSrc}
@@ -342,8 +342,8 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
                   )}
                 </button>
               )}
-            </div>
-            <h3 className="text-gray-900 dark:text-white font-semibold text-lg mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{contact.name}</h3>
+            </div> /* Fixed text color */
+            <h3 className className="text-gray-900 dark:text-white font-semibold text-lg mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{contact.name}</h3> /* Fixed text color */
             <p className="text-gray-600 dark:text-gray-300 text-sm">{contact.title}</p>
             <p className="text-gray-500 dark:text-gray-400 text-xs">{contact.company}</p>
           </div>
@@ -400,7 +400,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
         {/* Interest Level */}
         <div className="flex items-center justify-center space-x-2 mb-4">
           <div className={`w-2 h-2 rounded-full ${interestColors[contact.interestLevel]} animate-pulse`} />
-          <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+          <span className="text-xs text-gray-600 dark:text-gray-400 font-medium text-gray-600 dark:text-gray-400">
             {interestLabels[contact.interestLevel]}
           </span>
         </div>
@@ -408,7 +408,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
         {/* Sources */}
         <div className="mb-4">
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 text-center">Source</p>
-          <div className="flex justify-center flex-wrap gap-1">
+          <div className="flex justify-center flex-wrap gap-1 text-gray-900 dark:text-white">
             {contact.sources.map((source, index) => (
               <span
                 key={index}
@@ -452,7 +452,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
             AI Assistant Tools
           </h4>
           
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-2 gap-2 mb-3 text-gray-900 dark:text-white">
             {/* Lead Score */}
             <button 
               onClick={handleAnalyzeClick}
@@ -491,7 +491,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
             </button>
           </div>
         </div>
-
+        {/* AI Insights Section */}
         {/* AI Insights Section */}
         {contact.aiScore && (
           <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -509,7 +509,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
                 </button>
               </div>
             </div>
-            <p className="text-xs text-gray-700 dark:text-gray-300">
+            <p className="text-xs text-gray-700 dark:text-gray-300 text-gray-700 dark:text-gray-300">
               {analyzing ? 'AI analysis in progress...' :
                contact.aiScore >= 80 ? 'High conversion potential - prioritize for immediate follow-up.' :
                contact.aiScore >= 60 ? 'Good engagement potential - schedule follow-up within 48 hours.' :
@@ -522,7 +522,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
             </div>
           </div>
         )}
-        
+        {/* Custom Fields - NEW FEATURE */}
         {/* Custom Fields - NEW FEATURE */}
         {customFields && Object.keys(customFields).length > 0 && (
           <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -541,7 +541,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
                 {showCustomFields ? <ArrowRight className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-2 gap-2 text-xs text-gray-900 dark:text-white">
               {Object.entries(customFields).slice(0, showCustomFields ? Object.keys(customFields).length : 2).map(([key, value], index) => (
                 <div key={index} className="bg-white dark:bg-gray-700 p-1.5 rounded border border-gray-100 dark:border-gray-600">
                   <p className="text-gray-500 dark:text-gray-400 text-[10px]">{key}</p>
@@ -550,8 +550,8 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
               ))}
             </div>
           </div>
-        )}
-
+        )} 
+        {/* Social Profiles - NEW FEATURE */}
         {/* Social Profiles - NEW FEATURE */}
         {socialProfiles && Object.values(socialProfiles).some(Boolean) && (
           <div className="mb-4">
@@ -579,7 +579,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
             </div>
           </div>
         )}
-
+        {/* Last Connected - NEW FEATURE */}
         {/* Last Connected - NEW FEATURE */}
         {contact.lastConnected && (
           <div className="mb-4 p-2 bg-gray-50 rounded-lg border border-gray-200">
@@ -590,8 +590,8 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
               </p>
             </div>
           </div>
-        )}
-
+        )} 
+        {/* AI Tools Section */}
         {/* AI Tools Section */}
         <div className="mb-4">
           <CustomizableAIToolbar
@@ -604,7 +604,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
             showCustomizeButton={true}
           />
         </div>
-
+        /* Traditional Action Buttons */
         {/* Traditional Action Buttons */}
         <div className="grid grid-cols-3 gap-1.5">
           <button 
@@ -635,7 +635,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
             <User size={11} className="mr-1" /> View
           </button>
         </div>
-
+        /* Team Action Button (if applicable) */
         {/* Team Action Button (if applicable) */}
         {showTeamAction && onAddToTeam && (
           <div className="mt-3">
@@ -651,7 +651,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
             </button>
           </div>
         )}
-
+        /* Tags Display - NEW FEATURE */
         {/* Tags Display - NEW FEATURE */}
         {contact.tags && contact.tags.length > 0 && (
           <div className="mt-4">
@@ -672,7 +672,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
             </div>
           </div>
         )}
-
+        /* Click indicator */
         {/* Click indicator */}
         <div className="mt-3 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <p className="text-xs text-blue-500 font-medium">
