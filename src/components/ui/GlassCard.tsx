@@ -14,7 +14,7 @@ export const GlassCard: React.FC<GlassCardProps> = ({
   onClick
 }) => {
   const variantClasses = {
-    light: 'glass-light', /* Added dark mode styles for glass-light */
+    light: 'glass-light',
     medium: 'glass-medium',
     heavy: 'glass-heavy',
   };

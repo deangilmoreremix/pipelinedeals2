@@ -105,7 +105,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({
           </div>
           
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{member.name}</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300 text-gray-600 dark:text-gray-300">{member.title}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">{member.title}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">{member.company}</p>
 
           {/* Member Level Badge */}
@@ -116,7 +116,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({
         </div>
 
         {/* Stats Section */}
-        <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-3 mb-4 text-gray-900 dark:text-white">
+        <div className="bg-indigo-50 dark:bg-indigo-900/30 rounded-lg p-3 mb-4">
           <h4 className="text-xs font-semibold text-indigo-900 dark:text-indigo-300 uppercase tracking-wide mb-2 flex items-center justify-center">
             <Trophy className="w-3 h-3 text-indigo-600 dark:text-indigo-400 mr-1" />
             Performance Stats
@@ -144,7 +144,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({
 
         {/* Progress Towards Goal */}
         {gamificationStats?.monthlyGoal && (
-          <div className="mb-4 text-gray-900 dark:text-white">
+          <div className="mb-4">
             <div className="flex justify-between text-xs mb-1">
               <span className="font-medium text-gray-700 dark:text-gray-300">Monthly Goal</span>
               <span className="font-medium text-indigo-700 dark:text-indigo-400">${(gamificationStats.monthlyProgress || 0).toLocaleString()} / ${gamificationStats.monthlyGoal.toLocaleString()}</span>
@@ -160,7 +160,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({
 
         {/* Achievements Section */}
         {gamificationStats?.achievements && gamificationStats.achievements.length > 0 && (
-          <div className="mb-4 text-gray-900 dark:text-white">
+          <div className="mb-4">
             <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-center">
               <Award className="w-3 h-3 text-yellow-600 dark:text-yellow-500 mr-1" />
               Achievements
@@ -189,7 +189,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({
         )}
 
         {/* Contact Actions */}
-        <div className="grid grid-cols-2 gap-2 text-gray-900 dark:text-white">
+        <div className="grid grid-cols-2 gap-2">
           <button 
             onClick={(e) => {
               e.stopPropagation();

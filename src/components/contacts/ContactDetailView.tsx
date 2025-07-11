@@ -155,22 +155,22 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 bg-black/90 dark:bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
         }
       }}
     >
-      <div className="bg-white rounded-2xl w-full max-w-[95vw] max-h-[95vh] overflow-hidden flex animate-scale-in shadow-2xl">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-[95vw] max-h-[95vh] overflow-hidden flex animate-scale-in shadow-2xl border border-gray-200 dark:border-gray-700">
         {/* Left Side - Contact Profile */}
-        <div className="w-2/5 bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col max-h-[95vh]">
+        <div className="w-2/5 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex flex-col max-h-[95vh]">
           {/* Fixed Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white/50 backdrop-blur-sm">
-            <h1 className="text-2xl font-bold text-gray-900">Contact Profile</h1>
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-black/10 backdrop-blur-sm">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contact Profile</h1>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -750,9 +750,9 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
         </div>
 
         {/* Right Side - Detailed Information */}
-        <div className="flex-1 bg-white overflow-y-auto flex flex-col">
+        <div className="flex-1 bg-white dark:bg-gray-900 overflow-y-auto flex flex-col">
           {/* Tabs Navigation */}
-          <div className="sticky top-0 bg-white z-10 border-b border-gray-200 px-6 py-3">
+          <div className="sticky top-0 bg-white dark:bg-gray-900 z-10 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
             <div className="flex space-x-1">
               {[
                 { id: 'overview', label: 'Overview', icon: FileText },
@@ -767,8 +767,8 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center space-x-1 ${
                     activeTab === tab.id 
-                      ? 'bg-blue-100 text-blue-700' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' 
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
                   <tab.icon className="w-4 h-4" />
@@ -779,16 +779,16 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
           </div>
           
           {/* Tab Content */}
-          <div className="p-8 flex-1 overflow-y-auto text-gray-900 dark:text-white">
+          <div className="p-8 flex-1 overflow-y-auto bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             {/* Overview Tab */}
             {activeTab === 'overview' && (
               <div>
-                <h3 className="text-xl font-bold mb-6">Contact Overview</h3>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Contact Overview</h3>
                 
                 {/* Contact Summary */}
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm mb-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <User className="w-5 h-5 mr-2 text-blue-500" />
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                    <User className="w-5 h-5 mr-2 text-blue-500 dark:text-blue-400" />
                     Contact Summary
                   </h4>
                   
