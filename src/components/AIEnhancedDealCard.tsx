@@ -230,7 +230,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
     <div
       ref={cardRef}
       onClick={handleCardClick}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group relative border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 overflow-hidden"
+      className="bg-white dark:bg-gray-900 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group relative border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 overflow-hidden"
     >
       {/* Selection Checkbox */}
       {onSelect && (
@@ -406,9 +406,9 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
 
         {/* AI Enhancement Notice - New Feature */}
         {lastEnrichment && (
-          <div className="mb-4 p-2 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-700 shadow-sm">
+          <div className="mb-4 p-2 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 rounded-lg border border-purple-200 dark:border-purple-700 shadow-sm">
             <div className="flex items-center justify-center space-x-2">
-              <Sparkles className="w-3 h-3 text-purple-500" />
+              <Sparkles className="w-3 h-3 text-purple-500 dark:text-purple-400" />
               <span className="text-xs font-medium text-purple-800 dark:text-purple-300">
                 AI Enhanced{lastEnrichment.aiProvider ? ` (${lastEnrichment.aiProvider})` : ''}
               </span>
@@ -483,9 +483,9 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
         )}
 
         {/* AI Tools Section - NEW ENHANCED FEATURE */}
-        <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-700 shadow-sm">
-          <h4 className="text-xs font-semibold text-gray-900 dark:text-gray-200 mb-2 flex items-center justify-center">
-            <Brain className="w-3 h-3 mr-1 text-purple-600" />
+        <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 rounded-lg border border-purple-200 dark:border-purple-700 shadow-sm">
+          <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-2 flex items-center justify-center">
+            <Brain className="w-3 h-3 mr-1 text-purple-600 dark:text-purple-400" />
             AI Assistant Tools
           </h4>
           
@@ -505,9 +505,9 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             </button>
             
             {/* Email AI */}
-            <button className="p-2 flex flex-col items-center justify-center rounded-lg text-xs font-medium transition-all duration-200 border shadow-sm hover:shadow-md hover:scale-105 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 border-gray-200/50">
+            <button className="p-2 flex flex-col items-center justify-center rounded-lg text-xs font-medium transition-all duration-200 border shadow-sm hover:shadow-md hover:scale-105 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 hover:from-gray-100 hover:to-gray-200 dark:hover:from-gray-600 dark:hover:to-gray-700 border-gray-200/50 dark:border-gray-700/50">
               <Mail className="w-3 h-3 mb-0.5" />
-              <span className="text-[10px] dark:text-gray-900">Email</span>
+              <span className="text-[10px] dark:text-gray-200">Email</span>
             </button>
             
             {/* AI Auto-Enrich */}
@@ -530,10 +530,10 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
         </div>
 
         {/* AI Insights Section */}
-        <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+        <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 rounded-lg border border-purple-200 dark:border-purple-700">
           <div className="flex justify-between items-center mb-2">
-            <h4 className="text-sm font-medium text-gray-900 dark:text-gray-200 flex items-center">
-              <BarChart3 className="w-4 h-4 mr-2 text-purple-500" />
+            <h4 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+              <BarChart3 className="w-4 h-4 mr-2 text-purple-500 dark:text-purple-400" />
               AI Insights
             </h4>
             <div className="flex space-x-1">
@@ -560,10 +560,10 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
 
         {/* Custom Fields - NEW FEATURE */}
         {customFields && Object.keys(customFields).length > 0 && (
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center mb-2">
-              <h4 className="text-xs font-semibold text-gray-700 flex items-center">
-                <Database className="w-3 h-3 mr-1 text-gray-500" />
+              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                <Database className="w-3 h-3 mr-1 text-gray-500 dark:text-gray-400" />
                 Custom Fields
               </h4>
               <button 
@@ -578,9 +578,9 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               {Object.entries(customFields).slice(0, showCustomFields ? Object.keys(customFields).length : 2).map(([key, value], index) => (
-                <div key={index} className="bg-white p-1.5 rounded border border-gray-100">
-                  <p className="text-gray-500 text-[10px]">{key}</p>
-                  <p className="text-gray-700 font-medium truncate">{value as string}</p>
+                <div key={index} className="bg-white dark:bg-gray-700 p-1.5 rounded border border-gray-100 dark:border-gray-600">
+                  <p className="text-gray-500 dark:text-gray-400 text-[10px]">{key}</p>
+                  <p className="text-gray-700 dark:text-gray-300 font-medium truncate">{value as string}</p>
                 </div>
               ))}
             </div>
@@ -617,10 +617,10 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
 
         {/* Last Activity - NEW FEATURE */}
         {deal.lastActivity && (
-          <div className="mb-4 p-2 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="mb-4 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-center space-x-2">
-              <Activity className="w-3 h-3 text-blue-500" />
-              <p className="text-xs text-gray-600">
+              <Activity className="w-3 h-3 text-blue-500 dark:text-blue-400" />
+              <p className="text-xs text-gray-600 dark:text-gray-300">
                 <span className="font-medium">Last Activity:</span> {deal.lastActivity}
               </p>
             </div>

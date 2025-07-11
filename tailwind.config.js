@@ -61,6 +61,12 @@ export default {
       colors: {
         'glass-white': 'rgba(255, 255, 255, 0.25)',
         'glass-black': 'rgba(0, 0, 0, 0.25)',
+        // Add dark mode theme colors
+        'dark-card': '#1e293b', // slate-800
+        'dark-card-foreground': '#f1f5f9', // slate-100
+        'dark-border': '#334155', // slate-700
+        'dark-input': '#1e293b', // slate-800
+        'dark-ring': '#3b82f6', // blue-500
       },
       gridTemplateColumns: {
         '53': 'repeat(53, minmax(0, 1fr))',
