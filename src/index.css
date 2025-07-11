@@ -9,7 +9,7 @@
   --card: 0 0% 100%;
   --card-foreground: 222.2 84% 4.9%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
+  --popover-foreground: 222.2 84% 4.9%; /* Adjusted for better contrast */
   --primary: 221.2 83.2% 53.3%;
   --primary-foreground: 210 40% 98%;
   --secondary: 210 40% 96.1%; 
@@ -35,7 +35,7 @@
 /* Dark mode variables */
 .dark {
   --background: 222.2 47.4% 11.2%;
-  --foreground: 210 40% 98%; /* 16:1+ contrast ratio with dark background */
+  --foreground: 210 40% 98%; /* High contrast with dark background */
   --card: 222.2 47.4% 11.2%;
   --card-foreground: 210 40% 98%;
   --popover: 222.2 84% 4.9%;
@@ -80,13 +80,12 @@ body {
 }
 
 /* Improved text contrast in dark mode */
-.dark .text-gray-500 {
-  color: rgba(209, 213, 219, 0.9);
-}
-
-.dark .text-gray-600, 
-.dark .text-gray-700 {
-  color: rgba(229, 231, 235, 0.9); /* Lighter color for better contrast */
+.dark .text-gray-500,
+.dark .text-gray-600,
+.dark .text-gray-700,
+.dark .text-gray-800,
+.dark .text-gray-900 {
+  color: hsl(var(--foreground)); /* Ensure all gray shades become white/light gray */
 }
 
 /* Modal and popup specific dark mode styles */

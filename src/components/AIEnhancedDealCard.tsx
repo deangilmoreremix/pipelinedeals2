@@ -309,7 +309,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
 
       <div className="p-6">
         {/* Company and Person Avatars with Deal Info */}
-        <div className="flex items-start justify-between mb-4 mt-4">
+        <div className="flex items-start justify-between mb-4 mt-4 text-gray-900 dark:text-white">
           <div className="flex-1 min-w-0">
             <h3 className="text-gray-900 dark:text-white font-semibold text-lg mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
               {deal.title}
@@ -340,7 +340,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
                   </button>
                 )}
               </div>
-              <div>
+              <div className="text-gray-600 dark:text-gray-300">
                 <p className="text-gray-600 dark:text-gray-300 text-sm font-medium">{deal.company}</p>
               </div>
             </div>
@@ -368,7 +368,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
                   </button>
                 )}
               </div>
-              <div>
+              <div className="text-gray-500 dark:text-gray-400">
                 <p className="text-gray-500 dark:text-gray-400 text-xs">{deal.contact}</p>
               </div>
             </div>
@@ -424,7 +424,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
         {/* Priority Level */}
         <div className="flex items-center justify-center space-x-2 mb-4">
           <div className={`w-2 h-2 rounded-full ${getPriorityColor(deal.priority)} animate-pulse`} />
-          <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">
+          <span className="text-xs text-gray-600 dark:text-gray-300 font-medium text-gray-600 dark:text-gray-300">
             {getPriorityLabel(deal.priority)}
           </span>
         </div>
@@ -433,7 +433,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
         <div className="mb-4">
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 text-center">Value & Stage</p>
           <div className="flex justify-center items-center space-x-3">
-            <div className="text-center">
+            <div className="text-center text-gray-900 dark:text-white">
               <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(deal.value)}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Deal Value</p>
             </div>
@@ -447,7 +447,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             </div>
           </div>
         </div>
-
+        {/* AI Insights Section */}
         {/* Progress Dots */}
         <div className="flex items-center justify-center space-x-1 mb-4">
           {Array.from({ length: 5 }, (_, i) => {
@@ -489,7 +489,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             AI Assistant Tools
           </h4>
           
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-2 gap-2 mb-3 text-gray-900 dark:text-white">
             {/* Lead Score */}
             <button 
               onClick={handleAnalyzeClick}
@@ -544,7 +544,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
                 <ThumbsDown className="w-3 h-3" />
               </button>
             </div>
-          </div>
+          </div> 
           <p className="text-xs text-gray-700 dark:text-gray-300">
             {analyzing ? 'AI analysis in progress...' :
              deal.probability >= 80 ? 'High conversion probability. Top priority for immediate follow-up.' :
@@ -557,7 +557,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             <span className="text-xs text-purple-700 dark:text-purple-400 font-medium">AI-powered analysis</span>
           </div>
         </div>
-
+        {/* Custom Fields - NEW FEATURE */}
         {/* Custom Fields - NEW FEATURE */}
         {customFields && Object.keys(customFields).length > 0 && (
           <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -576,7 +576,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
                 {showCustomFields ? <ArrowRight className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-2 gap-2 text-xs text-gray-900 dark:text-white">
               {Object.entries(customFields).slice(0, showCustomFields ? Object.keys(customFields).length : 2).map(([key, value], index) => (
                 <div key={index} className="bg-white dark:bg-gray-700 p-1.5 rounded border border-gray-100 dark:border-gray-600">
                   <p className="text-gray-500 dark:text-gray-400 text-[10px]">{key}</p>
@@ -585,8 +585,8 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
               ))}
             </div>
           </div>
-        )}
-
+        )} 
+        {/* Social Profiles - NEW FEATURE */}
         {/* Social Profiles - NEW FEATURE */}
         {socialProfiles && Object.values(socialProfiles).some(Boolean) && (
           <div className="mb-4">
@@ -614,7 +614,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             </div>
           </div>
         )}
-
+        {/* Last Activity - NEW FEATURE */}
         {/* Last Activity - NEW FEATURE */}
         {deal.lastActivity && (
           <div className="mb-4 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -625,8 +625,8 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
               </p>
             </div>
           </div>
-        )}
-
+        )} 
+        {/* AI Tools Section */}
         {/* AI Tools Section */}
         <div className="mb-4">
           <CustomizableAIToolbar
@@ -639,7 +639,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             showCustomizeButton={true}
           />
         </div>
-
+        {/* Action Buttons */}
         {/* Action Buttons */}
         <div className="grid grid-cols-3 gap-1.5">
           <button 
@@ -670,7 +670,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             <Target size={11} className="mr-1" /> View
           </button>
         </div>
-
+        {/* Tags Display */}
         {/* Tags Display */}
         {deal.tags && deal.tags.length > 0 && (
           <div className="mt-4">
@@ -691,7 +691,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             </div>
           </div>
         )}
-
+        {/* Click indicator */}
         {/* Click indicator */}
         <div className="mt-3 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <p className="text-xs text-blue-500 font-medium">
