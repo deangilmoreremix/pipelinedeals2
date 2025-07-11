@@ -118,7 +118,7 @@ export const AccessibleDialog: React.FC<AccessibleDialogProps> = ({
             </div>
             
             {/* Content */}
-            <div className="px-6 py-4">
+            <div className="px-6 py-4 text-gray-900 dark:text-white">
               {children}
             </div>
           </div>
