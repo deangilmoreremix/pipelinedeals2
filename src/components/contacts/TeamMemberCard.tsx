@@ -41,7 +41,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({
   return (
     <div 
       onClick={handleCardClick}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group relative border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 overflow-hidden"
+      className="bg-white dark:bg-gray-900 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group relative border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 overflow-hidden"
     >
       {/* Selection Checkbox */}
       <div className="absolute top-4 left-4 z-10">

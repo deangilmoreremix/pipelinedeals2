@@ -207,7 +207,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
   return (
     <div
       onClick={handleCardClick}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group relative border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 overflow-hidden"
+      className="bg-white dark:bg-gray-900 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group relative border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 overflow-hidden"
     >
       {/* Selection Checkbox */}
       <div className="absolute top-4 left-4 z-10">
@@ -382,7 +382,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
         
         {/* AI Enhancement Notice - New Feature */}
         {lastEnrichment && (
-          <div className="mb-4 p-2 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 rounded-lg border border-purple-200 dark:border-purple-800">
+          <div className="mb-4 p-2 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 rounded-lg border border-purple-200 dark:border-purple-800 shadow-sm">
             <div className="flex items-center justify-center space-x-2">
               <Sparkles className="w-3 h-3 text-purple-500 dark:text-purple-400" />
               <span className="text-xs font-medium text-purple-800 dark:text-purple-300">
@@ -446,8 +446,8 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
         </div>
         
         {/* AI Tools Section - NEW ENHANCED FEATURE */}
-        <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-          <h4 className="text-xs font-semibold text-gray-900 dark:text-gray-200 mb-2 flex items-center justify-center">
+        <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 rounded-lg border border-purple-200 dark:border-purple-800 shadow-sm">
+          <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-2 flex items-center justify-center">
             <Brain className="w-3 h-3 mr-1 text-purple-600 dark:text-purple-400" />
             AI Assistant Tools
           </h4>
@@ -468,9 +468,9 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
             </button>
             
             {/* Email AI */}
-            <button className="p-2 flex flex-col items-center justify-center rounded-lg text-xs font-medium transition-all duration-200 border shadow-sm hover:shadow-md hover:scale-105 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 border-gray-200/50">
+            <button className="p-2 flex flex-col items-center justify-center rounded-lg text-xs font-medium transition-all duration-200 border shadow-sm hover:shadow-md hover:scale-105 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 hover:from-gray-100 hover:to-gray-200 dark:hover:from-gray-600 dark:hover:to-gray-700 border-gray-200/50 dark:border-gray-700/50">
               <Mail className="w-3 h-3 mb-0.5" />
-              <span className="text-[10px]">Email</span>
+              <span className="text-[10px] dark:text-gray-200">Email</span>
             </button>
             
             {/* AI Auto-Enrich */}
@@ -494,9 +494,9 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
 
         {/* AI Insights Section */}
         {contact.aiScore && (
-          <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
             <div className="flex justify-between items-center mb-2">
-              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-200 flex items-center">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
                 <BarChart className="w-4 h-4 mr-2 text-blue-500 dark:text-blue-400" />
                 AI Insights
               </h4>
@@ -528,7 +528,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
           <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center mb-2">
               <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center">
-                <Database className="w-3 h-3 mr-1 text-gray-500" />
+                <Database className="w-3 h-3 mr-1 text-gray-500 dark:text-gray-400" />
                 Custom Fields
               </h4>
               <button 
@@ -585,7 +585,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
           <div className="mb-4 p-2 bg-gray-50 rounded-lg border border-gray-200">
             <div className="flex items-center justify-center space-x-2">
               <Activity className="w-3 h-3 text-blue-500" />
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-gray-600 dark:text-gray-300">
                 <span className="font-medium">Last Connected:</span> {contact.lastConnected}
               </p>
             </div>
