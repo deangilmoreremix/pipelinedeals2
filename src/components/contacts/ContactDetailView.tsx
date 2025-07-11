@@ -37,7 +37,8 @@ import {
   Crown,
   Star,
   Award,
-  Trophy
+  Trophy,
+  User
 } from 'lucide-react';
 
 interface ContactDetailViewProps {
@@ -449,7 +450,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
             )}
 
             {/* Contact Details */}
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
               <h4 className="font-semibold text-gray-900 mb-4">Contact Details</h4>
               
               <div className="space-y-3">
@@ -461,7 +462,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg"
                     />
                     <div className="flex space-x-2">
                       <button
@@ -482,7 +483,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                 ) : (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <Mail className="w-5 h-5 text-blue-500 mr-3" />
+                      <Mail className="w-5 h-5 text-blue-500 dark:text-blue-400 mr-3" />
                       <div>
                         <p className="text-sm text-gray-600">Email</p>
                         <a 
@@ -511,7 +512,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                       type="tel"
                       value={formData.phone || ''}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg"
                     />
                     <div className="flex space-x-2">
                       <button
@@ -532,7 +533,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                 ) : (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <Phone className="w-5 h-5 text-green-500 mr-3" />
+                      <Phone className="w-5 h-5 text-green-500 dark:text-green-400 mr-3" />
                       <div>
                         <p className="text-sm text-gray-600">Phone</p>
                         {contact.phone ? (
@@ -566,14 +567,14 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                         type="text"
                         value={formData.company}
                         onChange={(e) => handleInputChange('company', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg"
                         placeholder="Company"
                       />
                       <input
                         type="text"
                         value={formData.industry || ''}
                         onChange={(e) => handleInputChange('industry', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg"
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg"
                         placeholder="Industry"
                       />
                     </div>
@@ -599,7 +600,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                 ) : (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <Building2 className="w-5 h-5 text-purple-500 mr-3" />
+                      <Building2 className="w-5 h-5 text-purple-500 dark:text-purple-400 mr-3" />
                       <div>
                         <p className="text-sm text-gray-600">Company & Industry</p>
                         <p className="text-gray-900">{contact.company} {contact.industry ? `• ${contact.industry}` : ''}</p>
@@ -615,7 +616,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                 )}
                 
                 {/* Tags */}
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between text-gray-900 dark:text-white">
                   <div className="flex items-start">
                     <Tag className="w-5 h-5 text-yellow-500 mr-3 mt-0.5" />
                     <div>
@@ -647,7 +648,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
             </div>
             
             {/* Additional Information */}
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
               <h4 className="font-semibold text-gray-900 mb-4">Additional Information</h4>
               
               <div className="space-y-3">
@@ -669,7 +670,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                 {/* Last Connected */}
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Last Connected</p>
-                  <div className="flex items-center">
+                  <div className="flex items-center text-gray-900 dark:text-white">
                     <Clock className="w-4 h-4 text-gray-500 mr-2" />
                     <p className="text-gray-900">{contact.lastConnected || 'No record'}</p>
                   </div>
@@ -702,7 +703,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
             </div>
             
             {/* Notes */}
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold text-gray-900">Notes</h4>
                 <button
@@ -718,7 +719,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                   <textarea
                     value={formData.notes || ''}
                     onChange={(e) => handleInputChange('notes', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg"
                     rows={5}
                   />
                   <div className="flex space-x-2">
@@ -738,7 +739,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
                   <p className="text-gray-700 whitespace-pre-line">
                     {contact.notes || 'No notes for this contact.'}
                   </p>
@@ -778,14 +779,14 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
           </div>
           
           {/* Tab Content */}
-          <div className="p-8 flex-1 overflow-y-auto">
+          <div className="p-8 flex-1 overflow-y-auto text-gray-900 dark:text-white">
             {/* Overview Tab */}
             {activeTab === 'overview' && (
               <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Contact Overview</h3>
+                <h3 className="text-xl font-bold mb-6">Contact Overview</h3>
                 
                 {/* Contact Summary */}
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 shadow-sm mb-6">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm mb-6">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <User className="w-5 h-5 mr-2 text-blue-500" />
                     Contact Summary
@@ -852,7 +853,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                 </div>
                 
                 {/* Company Information */}
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 shadow-sm mb-6">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm mb-6">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <Building2 className="w-5 h-5 mr-2 text-purple-500" />
                     Company Information
@@ -861,12 +862,12 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <p className="text-sm font-medium text-gray-700">Company Name</p>
-                      <p className="text-lg text-gray-900">{contact.company}</p>
+                      <p className="text-lg text-gray-900 dark:text-white">{contact.company}</p>
                     </div>
                     
                     <div>
                       <p className="text-sm font-medium text-gray-700">Industry</p>
-                      <p className="text-lg text-gray-900">{contact.industry || 'Not specified'}</p>
+                      <p className="text-lg text-gray-900 dark:text-white">{contact.industry || 'Not specified'}</p>
                     </div>
                     
                     {/* If we had more company details, they would go here */}
@@ -902,7 +903,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                         <Brain className="w-5 h-5 text-purple-600 mr-3" />
                         <div>
                           <p className="text-sm font-medium text-gray-700">AI Confidence Score</p>
-                          <p className="text-lg text-gray-900">{contact.lastEnrichment.confidence}%</p>
+                          <p className="text-lg text-gray-900 dark:text-white">{contact.lastEnrichment.confidence}%</p>
                         </div>
                       </div>
                       
@@ -910,7 +911,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                         <div className="w-5 h-5 flex items-center justify-center mr-3">🤖</div>
                         <div>
                           <p className="text-sm font-medium text-gray-700">AI Provider</p>
-                          <p className="text-gray-900">{contact.lastEnrichment.aiProvider || 'AI Assistant'}</p>
+                          <p className="text-gray-900 dark:text-white">{contact.lastEnrichment.aiProvider || 'AI Assistant'}</p>
                         </div>
                       </div>
                       
@@ -919,7 +920,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                           <Calendar className="w-5 h-5 text-blue-600 mr-3" />
                           <div>
                             <p className="text-sm font-medium text-gray-700">Enrichment Date</p>
-                            <p className="text-gray-900">{contact.lastEnrichment.timestamp.toLocaleDateString()}</p>
+                            <p className="text-gray-900 dark:text-white">{contact.lastEnrichment.timestamp.toLocaleDateString()}</p>
                           </div>
                         </div>
                       )}
@@ -929,7 +930,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                 
                 {/* Quick Actions */}
                 <div className="grid grid-cols-3 gap-3 mb-6">
-                  <button className="p-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center justify-center">
+                  <button className="p-3 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-200 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors flex items-center justify-center">
                     <Mail className="w-5 h-5 mr-2" />
                     Send Email
                   </button>
@@ -937,7 +938,7 @@ export const ContactDetailView: React.FC<ContactDetailViewProps> = ({
                     <Phone className="w-5 h-5 mr-2" />
                     Call
                   </button>
-                  <button className="p-3 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors flex items-center justify-center">
+                  <button className="p-3 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-200 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800/60 transition-colors flex items-center justify-center">
                     <Calendar className="w-5 h-5 mr-2" />
                     Schedule
                   </button>
