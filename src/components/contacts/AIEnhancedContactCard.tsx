@@ -323,7 +323,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
               
               {/* AI Enhancement Indicator */}
               {lastEnrichment && (
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-purple-500 text-white flex items-center justify-center shadow-lg ring-2 ring-white">
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-purple-500 text-white flex items-center justify-center shadow-lg ring-2 ring-white dark:ring-gray-800">
                   <Sparkles className="w-2 h-2" />
                 </div>
               )}
@@ -343,7 +343,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
                 </button>
               )}
             </div>
-            <h3 className="text-gray-900 font-semibold text-lg mb-1 group-hover:text-blue-600 transition-colors">{contact.name}</h3>
+            <h3 className="text-gray-900 dark:text-white font-semibold text-lg mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{contact.name}</h3>
             <p className="text-gray-600 dark:text-gray-300 text-sm">{contact.title}</p>
             <p className="text-gray-500 dark:text-gray-400 text-xs">{contact.company}</p>
           </div>
@@ -407,7 +407,7 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
 
         {/* Sources */}
         <div className="mb-4">
-          <p className="text-xs text-gray-500 mb-2 text-center">Source</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 text-center">Source</p>
           <div className="flex justify-center flex-wrap gap-1">
             {contact.sources.map((source, index) => (
               <span
@@ -525,9 +525,9 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
         
         {/* Custom Fields - NEW FEATURE */}
         {customFields && Object.keys(customFields).length > 0 && (
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center mb-2">
-              <h4 className="text-xs font-semibold text-gray-700 flex items-center">
+              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center">
                 <Database className="w-3 h-3 mr-1 text-gray-500" />
                 Custom Fields
               </h4>
@@ -536,16 +536,16 @@ export const AIEnhancedContactCard: React.FC<AIEnhancedContactCardProps> = ({
                   e.stopPropagation();
                   setShowCustomFields(!showCustomFields);
                 }}
-                className="p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+                className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 {showCustomFields ? <ArrowRight className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               {Object.entries(customFields).slice(0, showCustomFields ? Object.keys(customFields).length : 2).map(([key, value], index) => (
-                <div key={index} className="bg-white p-1.5 rounded border border-gray-100">
-                  <p className="text-gray-500 text-[10px]">{key}</p>
-                  <p className="text-gray-700 font-medium truncate">{value as string}</p>
+                <div key={index} className="bg-white dark:bg-gray-700 p-1.5 rounded border border-gray-100 dark:border-gray-600">
+                  <p className="text-gray-500 dark:text-gray-400 text-[10px]">{key}</p>
+                  <p className="text-gray-700 dark:text-gray-300 font-medium truncate">{value as string}</p>
                 </div>
               ))}
             </div>

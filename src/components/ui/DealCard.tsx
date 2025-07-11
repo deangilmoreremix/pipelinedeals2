@@ -243,10 +243,10 @@ export const DealCard: React.FC<DealCardProps> = ({
                 type="text"
                 value={editForm.company}
                 onChange={(e) => setEditForm(prev => ({ ...prev, company: e.target.value }))}
-                className="text-lg font-semibold text-gray-900 bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none"
+                className="text-lg font-semibold text-gray-900 dark:text-white bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:outline-none dark:focus:border-blue-400"
               />
             ) : (
-              <h3 className="text-lg font-semibold text-gray-900">{deal.title || deal.company}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{deal.title || deal.company}</h3>
             )}
             <div className="flex items-center space-x-2 mt-1">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStageColor(deal.stage)}`}>
@@ -340,17 +340,17 @@ export const DealCard: React.FC<DealCardProps> = ({
       {/* Value */}
       <div className="mb-4">
         <div className="flex items-center space-x-2">
-          <DollarSign className="w-4 h-4 text-green-600" />
+          <DollarSign className="w-4 h-4 text-green-600 dark:text-green-400" />
           {isEditing ? (
             <input
               type="number"
               value={editForm.value}
               onChange={(e) => setEditForm(prev => ({ ...prev, value: parseInt(e.target.value) || 0 }))}
-              className="text-lg font-semibold text-green-600 bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none w-full"
+              className="text-lg font-semibold text-green-600 dark:text-green-400 bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none w-full"
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
-            <span className="text-lg font-semibold text-green-600">
+            <span className="text-lg font-semibold text-green-600 dark:text-green-400">
               {formatCurrency(deal.value)}
             </span>
           )}
@@ -361,8 +361,8 @@ export const DealCard: React.FC<DealCardProps> = ({
       {deal.contact && (
         <div className="mb-4">
           <div className="flex items-center space-x-2">
-            <User className="w-4 h-4 text-blue-600" />
-            <span className="text-sm text-gray-700">{deal.contact}</span>
+            <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">{deal.contact}</span>
           </div>
         </div>
       )}
@@ -370,7 +370,7 @@ export const DealCard: React.FC<DealCardProps> = ({
       {/* Next Follow-up (Brief Version) */}
       {deal.nextFollowUp && (
         <div className="mb-4">
-          <div className={`flex items-center space-x-2 ${isOverdue(deal.nextFollowUp) ? 'text-red-600' : 'text-gray-600'}`}>
+          <div className={`flex items-center space-x-2 ${isOverdue(deal.nextFollowUp) ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
             <Clock className="w-4 h-4" />
             <span className="text-sm">
               Due: {formatDate(deal.nextFollowUp)}

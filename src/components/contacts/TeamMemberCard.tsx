@@ -109,7 +109,7 @@ export const TeamMemberCard: React.FC<TeamMemberCardProps> = ({
           <p className="text-xs text-gray-500 dark:text-gray-400">{member.company}</p>
 
           {/* Member Level Badge */}
-          <div className="mt-2 inline-flex items-center bg-gradient-to-r from-indigo-600 to-purple-600 px-3 py-1 rounded-full">
+          <div className="mt-2 inline-flex items-center bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-700 px-3 py-1 rounded-full">
             <Crown className="w-3 h-3 text-yellow-300 mr-1" />
             <span className="text-xs font-bold text-white dark:text-gray-100">Level {gamificationStats?.level || 1}</span>
           </div>
