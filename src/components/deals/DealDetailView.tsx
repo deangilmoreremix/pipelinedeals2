@@ -1,13 +1,13 @@
 return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/80 dark:bg-black/90 backdrop-blur-sm z-50" onClick={onClose}></div>
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" onClick={onClose}></div>
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
-        <div className="relative w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-lg bg-white dark:bg-gray-900 shadow-2xl sm:rounded-xl">
+        <div className="relative w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-2xl sm:rounded-xl border border-gray-200 dark:border-gray-700">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Deal Details</h2>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-200">
               <X className="h-6 w-6" />
@@ -16,19 +16,19 @@ return (
 
           {/* Content */}
           <div className="grid grid-cols-1 md:grid-cols-3 h-[calc(90vh-73px)]">
-            {/* Left column - Deal Details (Fixed background and text colors) */}
-            <div className="p-6 overflow-y-auto border-r border-gray-200 dark:border-gray-700 md:col-span-1 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+            {/* Left column - Deal Details */}
+            <div className="p-6 overflow-y-auto border-r border-gray-200 dark:border-gray-700 md:col-span-1">
               {/* Deal Overview */}
               <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-4">Deal Overview</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Deal Overview</h3>
 
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                   <div className="flex items-center mb-4">
                     <div className="flex-shrink-0">
                       <img
                         src={deal.companyAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(deal.company)}&background=3b82f6&color=ffffff&size=40`}
                         alt={deal.company}
-                        className="h-12 w-12 rounded-lg border border-gray-200 dark:border-gray-700"
+                        className="h-12 w-12 rounded-lg border border-gray-200 dark:border-gray-600"
                       />
                     </div>
                     <div className="ml-4 flex-1 min-w-0">
@@ -39,13 +39,13 @@ return (
 
                   <div className="space-y-3">
                     {/* Deal Value */}
-                    <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
-                      <p className="text-sm">Deal Value</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Deal Value</p>
                       <p className="text-sm font-semibold text-green-600 dark:text-green-400">
                         {formatCurrency(deal.value)}
                       </p>
                     </div>
-                    {/* Deal Stage */}
+
                     {/* Deal Stage */}
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-600 dark:text-gray-300">Stage</p>
@@ -59,7 +59,7 @@ return (
                         {deal.stage.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                       </span>
                     </div>
-                    {/* Probability */}
+
                     {/* Probability */}
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-600 dark:text-gray-300">Probability</p>
@@ -73,7 +73,7 @@ return (
                         <span className="text-sm font-medium text-gray-900 dark:text-white">{deal.probability}%</span>
                       </div>
                     </div>
-                    {/* Priority */}
+
                     {/* Priority */}
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-600 dark:text-gray-300">Priority</p>
@@ -85,7 +85,7 @@ return (
                         {deal.priority.charAt(0).toUpperCase() + deal.priority.slice(1)}
                       </span>
                     </div>
-                    {/* Due Date */}
+
                     {/* Due Date */}
                     {deal.dueDate && (
                       <div className="flex items-center justify-between">
@@ -95,7 +95,7 @@ return (
                         </p>
                       </div>
                     )}
-                    {/* Created Date */}
+
                     {/* Created Date */}
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-600 dark:text-gray-300">Created</p>
@@ -103,7 +103,7 @@ return (
                         {new Date(deal.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    {/* Updated Date */}
+
                     {/* Updated Date */}
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-600 dark:text-gray-300">Last Updated</p>
@@ -130,10 +130,10 @@ return (
 
               {/* Contact Person */}
               {contactData && (
-                <div className="mb-6 text-gray-900 dark:text-white">
-                  <h3 className="text-lg font-semibold mb-4">Primary Contact</h3>
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Primary Contact</h3>
 
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+                  <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-shadow">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
                         {contactData.avatarSrc ? (
@@ -172,7 +172,7 @@ return (
               
               {/* Notes */}
               <div className="mb-6">
-                <div className="flex items-center justify-between mb-4 text-gray-900 dark:text-white">
+                <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Notes</h3>
                   <button
                     onClick={() => setEditingNotes(!editingNotes)}
@@ -194,9 +194,9 @@ return (
 
                 {editingNotes ? (
                   <div className="space-y-4">
-                    <textarea /* Added dark mode styles for textarea */
+                    <textarea
                       value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
+                      onChange={(e) => setNotes(e.target.value)} 
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                       rows={6}
                       placeholder="Add notes about this deal..."
@@ -218,7 +218,7 @@ return (
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 min-h-[100px] text-gray-700 dark:text-gray-300">
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 min-h-[100px]">
                     <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
                       {deal.notes || 'No notes added for this deal.'}
                     </p>
@@ -228,18 +228,18 @@ return (
             </div>
 
             {/* Right column - Tabs */}
-            <div className="md:col-span-2 flex flex-col bg-white dark:bg-gray-900">
+            <div className="md:col-span-2 flex flex-col">
               <div className="border-b border-gray-200 dark:border-gray-700">
                 <nav className="flex space-x-4 px-6 py-3" aria-label="Tabs">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => setActiveTab(tab.id)} 
                       className={`
                         px-3 py-2 text-sm font-medium rounded-md ${
                           activeTab === tab.id 
-                            ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' 
-                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' 
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                         }
                       `}
                     >
@@ -249,12 +249,12 @@ return (
                 </nav>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+              <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-gray-800">
                 {activeTab === 'summary' && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">Deal Summary</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Deal Summary</h3>
                     
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
+                    <div className="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 mb-6">
                       <h4 className="font-medium text-gray-900 dark:text-white mb-2">Key Details</h4>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
@@ -285,8 +285,8 @@ return (
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {/* Activity Summary (Fixed background and text colors) */}
-                      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                      {/* Activity Summary */}
+                      <div className="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
                         <h4 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center">
                           <Activity className="w-4 h-4 mr-2 text-blue-500 dark:text-blue-400" />
                           Activity
@@ -295,8 +295,8 @@ return (
                         <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">Email sent: "Follow-up on proposal"</p>
                       </div>
 
-                      {/* Timeline Position (Fixed background and text colors) */}
-                      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                      {/* Timeline Position */}
+                      <div className="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
                         <h4 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center">
                           <Calendar className="w-4 h-4 mr-2 text-indigo-500 dark:text-indigo-400" />
                           Timeline
@@ -310,8 +310,8 @@ return (
                         </div>
                       </div>
 
-                      {/* Next Steps (Fixed background and text colors) */}
-                      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                      {/* Next Steps */}
+                      <div className="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
                         <h4 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center">
                           <ArrowRight className="w-4 h-4 mr-2 text-green-500 dark:text-green-400" />
                           Next Steps
@@ -325,10 +325,10 @@ return (
 
                 {activeTab === 'communication' && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">Communication History</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Communication History</h3>
                     
-                    {/* Communication log would go here (Fixed background and text colors) */}
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
+                    {/* Communication log would go here */}
+                    <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 divide-y divide-gray-200 dark:divide-gray-600">
                       {/* Sample communication items */}
                       {[...Array(3)].map((_, index) => (
                         <div key={index} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-600">
@@ -370,10 +370,10 @@ return (
 
                 {activeTab === 'attachments' && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">Documents & Attachments</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Documents & Attachments</h3>
                     
-                    {/* Attachments would go here (Fixed background and text colors) */}
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                    {/* Attachments would go here */}
+                    <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="font-medium text-gray-900 dark:text-white">Uploaded Files</h4>
                         <label
@@ -385,7 +385,7 @@ return (
                         </label>
                       </div>
                       
-                      <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                      <div className="divide-y divide-gray-200 dark:divide-gray-600">
                         {/* Sample attachments */}
                         {[
                           { name: 'Proposal.pdf', type: 'PDF', size: '2.4 MB', date: '2023-09-10' },
@@ -426,12 +426,12 @@ return (
 
                 {activeTab === 'tasks' && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">Tasks & Follow-ups</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tasks & Follow-ups</h3>
                     
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4">
                       {/* Task Form */}
-                      <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <h4 className="font-medium mb-3">Add New Task</h4>
+                      <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-3">Add New Task</h4>
                         <div className="space-y-3">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -473,7 +473,7 @@ return (
                       </div>
 
                       {/* Tasks List */}
-                      <div className="space-y-3 text-gray-900 dark:text-white">
+                      <div className="space-y-3">
                         {/* Sample tasks */}
                         <div className="p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">
                           <div className="flex items-center justify-between mb-2">
@@ -507,12 +507,12 @@ return (
 
                 {activeTab === 'edit' && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Edit Deal</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Edit Deal</h3>
                   
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Left Column */}
                   <div className="space-y-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Deal Information</h3>
                       
                       <div className="space-y-4">
@@ -553,7 +553,7 @@ return (
 
                   {/* Right Column */}
                   <div className="space-y-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                    <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-4">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Advanced Options</h3>
                       
                       <div className="space-y-4">
@@ -635,7 +635,7 @@ return (
 
                 {activeTab === 'ai' && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">AI Insights & Analysis</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">AI Insights & Analysis</h3>
                     
                     {/* AI insights content would go here */}
                     <p>AI analysis content for this deal.</p>
@@ -644,16 +644,16 @@ return (
               </div>
             </div>
           </div>
-          {/* Footer (Fixed background and text colors) */}
+
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3 bg-gray-50 dark:bg-gray-800">
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3 bg-gray-50 dark:bg-gray-800/50">
             <button
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/70"
             >
               Close
             </button>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800/90">
               Save Changes
             </button>
           </div>
