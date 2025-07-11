@@ -226,7 +226,7 @@ export const DealCard: React.FC<DealCardProps> = ({
 
   return (
     <div
-      className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer"
       onClick={handleCardClick}
     >
       {/* Header */}
@@ -235,7 +235,7 @@ export const DealCard: React.FC<DealCardProps> = ({
           <img
             src={deal.companyAvatar || getCompanyAvatar(deal.company)}
             alt={deal.company}
-            className="w-10 h-10 rounded-lg object-cover"
+            className="w-10 h-10 rounded-lg object-cover dark:border-gray-600"
           />
           <div>
             {isEditing ? (
@@ -381,9 +381,9 @@ export const DealCard: React.FC<DealCardProps> = ({
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-gray-100">
+      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-100 dark:border-gray-700">
         <span>{formatDate(deal.createdAt)}</span>
-        <span className="text-blue-600 hover:underline">View Details</span>
+        <span className="text-blue-600 dark:text-blue-400 hover:underline">View Details</span>
       </div>
     </div>
   );
