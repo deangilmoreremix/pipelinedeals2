@@ -1,6 +1,8 @@
 import { useOpenAI } from './openaiService';
 import { useGeminiAI } from './geminiService';
 import { IntelligentAIService } from './intelligentAIService';
+import { validateAIContactAnalysis, validateAICompanyResearch, sanitizeString } from '../utils/validation';
+import { handleZodError, handleAPIError, withRetry, AppError } from '../utils/errorHandling';
 
 export interface ContactEnrichmentData {
   name?: string;
@@ -68,6 +70,8 @@ export interface DealEnrichmentData {
 
 class AIEnrichmentService {
   private intelligentAI: IntelligentAIService;
+  private cache = new Map<string, { data: any; timestamp: number }>();
+  private CACHE_TTL = 3600000; // 1 hour in ms
 
   constructor() {
     const openaiService = useOpenAI();
@@ -75,37 +79,88 @@ class AIEnrichmentService {
     this.intelligentAI = new IntelligentAIService(openaiService, geminiService);
   }
 
+  private getCacheKey(data: any, type: 'contact' | 'company' | 'deal'): string {
+    const keyParts = [];
+    if (type === 'contact') {
+      keyParts.push(data.email || data.name || '', data.company || '');
+    } else if (type === 'company') {
+      keyParts.push(data.name || '', data.domain || '');
+    } else if (type === 'deal') {
+      keyParts.push(data.title || '', data.company || '', data.id || '');
+    }
+    return `${type}:${keyParts.join('-').toLowerCase().replace(/\s+/g, '')}`;
+  }
+
+  private getFromCache(key: string) {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return cached.data;
+    }
+    if (cached) {
+      this.cache.delete(key);
+    }
+    return null;
+  }
+
+  private setToCache(key: string, data: any) {
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
   async enrichContact(contactData: Partial<ContactEnrichmentData>): Promise<ContactEnrichmentData> {
-    console.log('🔍 Enriching contact data...');
+    // Validate and sanitize input
+    const validation = validateAIContactAnalysis(contactData);
+    if (!validation.success) {
+      throw handleZodError(validation.error);
+    }
+
+    const sanitizedData = {
+      ...contactData,
+      name: contactData.name ? sanitizeString(contactData.name) : undefined,
+      email: contactData.email ? sanitizeString(contactData.email) : undefined,
+      company: contactData.company ? sanitizeString(contactData.company) : undefined,
+      title: contactData.title ? sanitizeString(contactData.title) : undefined,
+    };
+
+    const key = this.getCacheKey(sanitizedData, 'contact');
+    const cached = this.getFromCache(key);
+    if (cached) {
+      console.log('📦 Cache hit for contact enrichment');
+      return cached;
+    }
+
+    console.log(' Enriching contact data...');
     try {
-      if (!contactData.email && !contactData.name) {
+      if (!sanitizedData.email && !sanitizedData.name) {
         throw new Error('Insufficient contact data for enrichment');
       }
 
       // Use intelligent AI to research contact
       let result: ContactEnrichmentData = {};
       
-      if (contactData.name && contactData.company) {
+      if (sanitizedData.name && sanitizedData.company) {
         // If we have name and company, we can do deeper research
-        const personName = contactData.name;
-        const companyName = contactData.company;
+        const personName = sanitizedData.name;
+        const companyName = sanitizedData.company;
         
         // Use the intelligent routing for contact research
-        const contactInfo = await this.intelligentAI.researchContact(
-          personName,
-          companyName,
-          'speed' // Prioritize speed for contact enrichment
+        const contactInfo = await withRetry(
+          () => this.intelligentAI.researchContact(
+            personName,
+            companyName,
+            'speed' // Prioritize speed for contact enrichment
+          ),
+          2 // Retry up to 2 times for contact research
         );
         
         result = {
-          title: contactInfo.title || contactData.title,
-          phone: contactInfo.phone || contactData.phone,
-          linkedinUrl: contactInfo.linkedin || contactData.linkedinUrl,
-          industry: contactInfo.department || contactData.industry,
-          location: contactInfo.location || contactData.location,
+          title: contactInfo.title || sanitizedData.title,
+          phone: contactInfo.phone || sanitizedData.phone,
+          linkedinUrl: contactInfo.linkedin || sanitizedData.linkedinUrl,
+          industry: contactInfo.department || sanitizedData.industry,
+          location: contactInfo.location || sanitizedData.location,
           notes: contactInfo.background || '',
           socialProfiles: {
-            linkedin: contactInfo.linkedin || contactData.socialProfiles?.linkedin,
+            linkedin: contactInfo.linkedin || sanitizedData.socialProfiles?.linkedin,
           },
           confidence: 70,
           aiProvider: contactInfo.aiProvider || '⚡ Gemini Flash'
@@ -119,65 +174,117 @@ class AIEnrichmentService {
         };
       }
 
-      return {
-        ...contactData,
+      const enriched = {
+        ...sanitizedData,
         ...result
       };
+      this.setToCache(key, enriched);
+      return enriched;
     } catch (error) {
       console.error('❌ Contact enrichment failed:', error);
-      return {
-        ...contactData,
+
+      // Log structured error for monitoring
+      if (error instanceof AppError) {
+        console.error(`AppError [${error.code}]: ${error.message}`, error.details);
+      }
+
+      const fallback = {
+        ...sanitizedData,
         confidence: 0,
         aiProvider: '❌ Enrichment Failed',
         notes: 'Failed to enrich contact data. Please try again later.'
       };
+      // Don't cache errors
+      return fallback;
     }
   }
 
   async enrichCompany(companyData: Partial<CompanyEnrichmentData>): Promise<CompanyEnrichmentData> {
-    console.log('🔍 Enriching company data...');
+    // Validate input
+    const validation = validateAICompanyResearch({
+      companyName: companyData.name || '',
+      domain: companyData.domain
+    });
+    if (!validation.success) {
+      throw handleZodError(validation.error);
+    }
+
+    const sanitizedData = {
+      ...companyData,
+      name: companyData.name ? sanitizeString(companyData.name) : undefined,
+      domain: companyData.domain ? sanitizeString(companyData.domain) : undefined,
+    };
+
+    const key = this.getCacheKey(sanitizedData, 'company');
+    const cached = this.getFromCache(key);
+    if (cached) {
+      console.log('📦 Cache hit for company enrichment');
+      return cached;
+    }
+
+    console.log('� Enriching company data...');
     try {
-      if (!companyData.name) {
+      if (!sanitizedData.name) {
         throw new Error('Company name is required for enrichment');
       }
       
       // Use the intelligent AI for company research
-      const companyInfo = await this.intelligentAI.researchCompany(
-        companyData.name,
-        companyData.domain,
-        'quality' // Prioritize quality for company research
+      const companyInfo = await withRetry(
+        () => this.intelligentAI.researchCompany(
+          sanitizedData.name!,
+          sanitizedData.domain,
+          'quality' // Prioritize quality for company research
+        ),
+        2 // Retry up to 2 times for company research
       );
       
       const result: CompanyEnrichmentData = {
-        industry: companyInfo.industry || companyData.industry,
-        description: companyInfo.description || companyData.description,
-        size: companyInfo.employeeCount || companyData.size,
-        headquarters: companyInfo.headquarters || companyData.headquarters,
-        logo: companyInfo.logoUrl || companyData.logo,
-        revenue: companyInfo.revenue || companyData.revenue,
-        competitors: companyInfo.competitors || companyData.competitors,
-        technologiesUsed: companyInfo.technologies || companyData.technologiesUsed,
+        industry: companyInfo.industry || sanitizedData.industry,
+        description: companyInfo.description || sanitizedData.description,
+        size: companyInfo.employeeCount || sanitizedData.size,
+        headquarters: companyInfo.headquarters || sanitizedData.headquarters,
+        logo: companyInfo.logoUrl || sanitizedData.logo,
+        revenue: companyInfo.revenue || sanitizedData.revenue,
+        competitors: companyInfo.competitors || sanitizedData.competitors,
+        technologiesUsed: companyInfo.technologies || sanitizedData.technologiesUsed,
         confidence: 80,
         aiProvider: companyInfo.aiProvider || '🧠 Gemini Pro'
       };
       
-      return {
-        ...companyData,
+      const enriched = {
+        ...sanitizedData,
         ...result
       };
+      this.setToCache(key, enriched);
+      return enriched;
     } catch (error) {
       console.error('❌ Company enrichment failed:', error);
-      return {
-        ...companyData,
+
+      // Log structured error for monitoring
+      if (error instanceof AppError) {
+        console.error(`AppError [${error.code}]: ${error.message}`, error.details);
+      }
+
+      const fallback = {
+        ...sanitizedData,
         confidence: 0,
         aiProvider: '❌ Enrichment Failed',
         notes: 'Failed to enrich company data. Please try again later.'
       };
+      // Don't cache errors
+      return fallback;
     }
   }
 
   async enrichDeal(dealData: Partial<DealEnrichmentData>): Promise<DealEnrichmentData> {
-    console.log('🔍 Enriching deal data...');
+    const key = this.getCacheKey(dealData, 'deal');
+    const cached = this.getFromCache(key);
+    if (cached) {
+      console.log('📦 Cache hit for deal enrichment');
+      return cached;
+    }
+
+    console.log('� Enriching deal data...');
     try {
       if (!dealData.title || !dealData.company) {
         throw new Error('Deal title and company are required for enrichment');
@@ -201,18 +308,22 @@ class AIEnrichmentService {
         aiProvider: '🤖 GPT-4o / Gemini Hybrid'
       };
       
-      return {
+      const enriched = {
         ...dealData,
         ...result
       };
+      this.setToCache(key, enriched);
+      return enriched;
     } catch (error) {
       console.error('❌ Deal enrichment failed:', error);
-      return {
+      const fallback = {
         ...dealData,
         confidence: 0,
         aiProvider: '❌ Enrichment Failed',
         notes: 'Failed to enrich deal data. Please try again later.'
       };
+      // Don't cache errors
+      return fallback;
     }
   }
 

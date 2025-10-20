@@ -31,12 +31,6 @@ export interface Deal {
     aiProvider?: string;
     timestamp?: Date;
   };
-  links?: Array<{
-    title: string;
-    url: string;
-    type?: string;
-    createdAt?: string;
-  }>;
   attachments?: Array<{
     id: string;
     name: string;

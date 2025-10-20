@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getSupabaseService } from '../services/supabaseService';
 import { Contact } from '../types/contact';
 import { Deal } from '../types';
@@ -7,6 +7,7 @@ export const useRealTimeContacts = () => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const subscriptionRef = useRef<any>(null);
 
   useEffect(() => {
     const supabase = getSupabaseService();
@@ -27,8 +28,8 @@ export const useRealTimeContacts = () => {
 
     loadContacts();
 
-    // Real-time subscription
-    const subscription = supabase.subscribeToContacts((payload) => {
+    // Real-time subscription with proper cleanup
+    subscriptionRef.current = supabase.subscribeToContacts((payload) => {
       const { eventType, new: newRecord, old: oldRecord } = payload;
 
       setContacts(prev => {
@@ -36,7 +37,7 @@ export const useRealTimeContacts = () => {
           case 'INSERT':
             return [...prev, newRecord];
           case 'UPDATE':
-            return prev.map(contact => 
+            return prev.map(contact =>
               contact.id === newRecord.id ? newRecord : contact
             );
           case 'DELETE':
@@ -48,7 +49,11 @@ export const useRealTimeContacts = () => {
     });
 
     return () => {
-      subscription.unsubscribe();
+      // Proper cleanup to prevent memory leaks
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
     };
   }, []);
 
@@ -59,6 +64,7 @@ export const useRealTimeDeals = () => {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const subscriptionRef = useRef<any>(null);
 
   useEffect(() => {
     const supabase = getSupabaseService();
@@ -79,8 +85,8 @@ export const useRealTimeDeals = () => {
 
     loadDeals();
 
-    // Real-time subscription
-    const subscription = supabase.subscribeToDeals((payload) => {
+    // Real-time subscription with proper cleanup
+    subscriptionRef.current = supabase.subscribeToDeals((payload) => {
       const { eventType, new: newRecord, old: oldRecord } = payload;
 
       setDeals(prev => {
@@ -88,7 +94,7 @@ export const useRealTimeDeals = () => {
           case 'INSERT':
             return [...prev, newRecord];
           case 'UPDATE':
-            return prev.map(deal => 
+            return prev.map(deal =>
               deal.id === newRecord.id ? newRecord : deal
             );
           case 'DELETE':
@@ -100,7 +106,11 @@ export const useRealTimeDeals = () => {
     });
 
     return () => {
-      subscription.unsubscribe();
+      // Proper cleanup to prevent memory leaks
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
     };
   }, []);
 

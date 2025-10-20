@@ -43,25 +43,25 @@ const Pipeline: React.FC = () => {
   const [enrichingDealId, setEnrichingDealId] = useState<string | null>(null);
   const aiResearch = useAIResearch();
 
-  // Filter deals based on search and filters
+  // Filter deals based on search and filters - optimized with memoization
   const filteredDeals = useMemo(() => {
-    let filtered = { ...deals };
+    const searchTermLower = searchTerm.toLowerCase();
 
-    // Apply search filter
-    if (searchTerm) {
-      filtered = Object.fromEntries(
-        Object.entries(filtered).filter(([_, deal]) =>
-          deal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          deal.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          deal.contact.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
-    }
+    return Object.fromEntries(
+      Object.entries(deals).filter(([_, deal]) => {
+        // Apply search filter
+        if (searchTerm) {
+          const titleMatch = deal.title.toLowerCase().includes(searchTermLower);
+          const companyMatch = deal.company.toLowerCase().includes(searchTermLower);
+          const contactMatch = deal.contact.toLowerCase().includes(searchTermLower);
 
-    // Apply advanced filters
-    activeFilters.forEach(filter => {
-      filtered = Object.fromEntries(
-        Object.entries(filtered).filter(([_, deal]) => {
+          if (!titleMatch && !companyMatch && !contactMatch) {
+            return false;
+          }
+        }
+
+        // Apply advanced filters
+        return activeFilters.every(filter => {
           switch (filter.field) {
             case 'value':
               switch (filter.operator) {
@@ -88,11 +88,9 @@ const Pipeline: React.FC = () => {
             default:
               return true;
           }
-        })
-      );
-    });
-
-    return filtered;
+        });
+      })
+    );
   }, [deals, searchTerm, activeFilters]);
 
   // Update columns with filtered deals
@@ -504,12 +502,7 @@ const Pipeline: React.FC = () => {
                                         showAnalyzeButton={true}
                                         onAnalyze={handleAnalyzeDeal}
                                         onAIEnrich={handleEnrichDeal}
-                                        onAIEnrich={handleEnrichDeal}
                                         isAnalyzing={analyzingDealId === deal.id}
-                                        onToggleFavorite={handleToggleFavorite}
-                                        onFindNewImage={handleFindNewImage}
-                                        onAIEnrich={handleEnrichDeal}
-                                        isEnriching={enrichingDealId === deal.id}
                                         onToggleFavorite={handleToggleFavorite}
                                         onFindNewImage={handleFindNewImage}
                                       />

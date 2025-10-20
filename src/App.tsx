@@ -5,6 +5,8 @@ import { GamificationProvider } from './contexts/GamificationContext';
 import Pipeline from './components/Pipeline';
 import { DarkModeToggle } from './components/ui/DarkModeToggle';
 import { useKeyboardShortcuts, globalShortcuts } from './hooks/useKeyboardShortcuts';
+import ErrorBoundary from './components/ErrorBoundary';
+import { setupGlobalErrorHandling } from './utils/errorHandling';
 
 function AppContent() {
   useKeyboardShortcuts(globalShortcuts);
@@ -33,14 +35,21 @@ function AppContent() {
 }
 
 function App() {
+  // Set up global error handling
+  React.useEffect(() => {
+    setupGlobalErrorHandling();
+  }, []);
+
   return (
-    <ThemeProvider>
-      <PersonalizationProvider>
-        <GamificationProvider>
-          <AppContent />
-        </GamificationProvider>
-      </PersonalizationProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <PersonalizationProvider>
+          <GamificationProvider>
+            <AppContent />
+          </GamificationProvider>
+        </PersonalizationProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
