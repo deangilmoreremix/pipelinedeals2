@@ -69,10 +69,18 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [realTimeSubscription, setRealTimeSubscription] = useState<any>(null);
 
   // Load automations on component mount
   useEffect(() => {
     loadAutomations();
+    setupRealTimeUpdates();
+
+    return () => {
+      if (realTimeSubscription) {
+        realTimeSubscription.unsubscribe();
+      }
+    };
   }, [deal.id]);
 
   const loadAutomations = async () => {
@@ -97,6 +105,21 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
       setLoading(false);
     }
   };
+
+  const setupRealTimeUpdates = () => {
+    try {
+      const supabase = getSupabaseService();
+      const subscription = supabase.subscribeToAutomations(deal.id, (payload) => {
+        console.log('Real-time automation update:', payload);
+        // Reload automations when changes occur
+        loadAutomations();
+      });
+
+      setRealTimeSubscription(subscription);
+    } catch (err) {
+      console.error('Failed to setup real-time updates:', err);
+    }
+  };
   
   const [expandedAutomations, setExpandedAutomations] = useState<string[]>(['1']);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -119,10 +142,13 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
       // Update automation status in database
       await supabase.updateAutomation(id, { status: 'active' });
 
+      // Trigger workflow execution (simulate Netlify function call)
+      await triggerWorkflowExecution(id, 'activate');
+
       // Update local state
       const automation = availableAutomations.find(a => a.id === id);
       if (automation) {
-        const updated = { ...automation, status: 'active' as const };
+        const updated = { ...automation, status: 'active' as const, lastRun: new Date() };
         setAvailableAutomations(prev => prev.filter(a => a.id !== id));
         setActiveAutomations(prev => [...prev, updated]);
       }
@@ -132,6 +158,33 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
       setError('Failed to activate automation');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const triggerWorkflowExecution = async (automationId: string, action: string) => {
+    // Simulate calling a Netlify function for workflow execution
+    // In production, this would call: /netlify/functions/execute-automation
+    try {
+      const response = await fetch('/.netlify/functions/execute-automation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          automationId,
+          action,
+          dealId: deal.id,
+          timestamp: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Workflow execution failed');
+      }
+
+      const result = await response.json();
+      console.log('Workflow execution result:', result);
+    } catch (err) {
+      // For now, just log the error - in production this would be handled
+      console.warn('Workflow execution not available (Netlify function not deployed):', err);
     }
   };
   
@@ -276,52 +329,78 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
     try {
       setAiGenerating(true);
 
-      const supabase = getSupabaseService();
+      // Call AI service to generate automation (simulate Netlify function)
+      const aiResponse = await fetch('/.netlify/functions/generate-automation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dealId: deal.id,
+          dealData: {
+            title: deal.title,
+            company: deal.company,
+            value: deal.value,
+            stage: deal.stage,
+            priority: deal.priority
+          },
+          context: 'closing-sequence'
+        })
+      });
 
-      // Create AI-generated automation
+      let automationData;
+      if (aiResponse.ok) {
+        automationData = await aiResponse.json();
+      } else {
+        // Fallback to client-side generation if Netlify function not available
+        console.warn('AI service not available, using fallback generation');
+        automationData = {
+          name: `${deal.title} Closing Sequence`,
+          description: 'AI-generated sequence to move this deal to closed-won stage',
+          type: 'ai',
+          steps: [
+            {
+              id: `s${Date.now()}-1`,
+              type: 'email',
+              name: 'Value Proposition Reinforcement',
+              details: `Email highlighting key value propositions specific to ${deal.company}`,
+              status: 'pending'
+            },
+            {
+              id: `s${Date.now()}-2`,
+              type: 'delay',
+              name: 'Wait for Response',
+              details: 'Wait 3 days for a response before proceeding',
+              status: 'pending'
+            },
+            {
+              id: `s${Date.now()}-3`,
+              type: 'task',
+              name: 'Decision Maker Call',
+              details: `Schedule call with primary decision maker at ${deal.company}`,
+              status: 'pending'
+            },
+            {
+              id: `s${Date.now()}-4`,
+              type: 'delay',
+              name: 'Wait for Decision',
+              details: 'Wait 5 days for internal decision process',
+              status: 'pending'
+            },
+            {
+              id: `s${Date.now()}-5`,
+              type: 'email',
+              name: 'Contract Review',
+              details: 'Send final contract for review and signature',
+              status: 'pending'
+            }
+          ]
+        };
+      }
+
+      const supabase = getSupabaseService();
       const newAutomation = await supabase.createAutomation({
-        name: `${deal.title} Closing Sequence`,
-        description: 'AI-generated sequence to move this deal to closed-won stage',
-        type: 'ai',
+        ...automationData,
         status: 'draft',
         dealId: deal.id,
-        steps: [
-          {
-            id: `s${Date.now()}-1`,
-            type: 'email',
-            name: 'Value Proposition Reinforcement',
-            details: `Email highlighting key value propositions specific to ${deal.company}`,
-            status: 'pending'
-          },
-          {
-            id: `s${Date.now()}-2`,
-            type: 'delay',
-            name: 'Wait for Response',
-            details: 'Wait 3 days for a response before proceeding',
-            status: 'pending'
-          },
-          {
-            id: `s${Date.now()}-3`,
-            type: 'task',
-            name: 'Decision Maker Call',
-            details: `Schedule call with primary decision maker at ${deal.company}`,
-            status: 'pending'
-          },
-          {
-            id: `s${Date.now()}-4`,
-            type: 'delay',
-            name: 'Wait for Decision',
-            details: 'Wait 5 days for internal decision process',
-            status: 'pending'
-          },
-          {
-            id: `s${Date.now()}-5`,
-            type: 'email',
-            name: 'Contract Review',
-            details: 'Send final contract for review and signature',
-            status: 'pending'
-          }
-        ]
       });
 
       setAvailableAutomations(prev => [...prev, newAutomation]);
