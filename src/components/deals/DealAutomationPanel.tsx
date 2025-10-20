@@ -145,6 +145,7 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [showAIBuilder, setShowAIBuilder] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | 'valid' | 'invalid'>('all');
 
   const toggleExpand = (id: string) => {
     setExpandedAutomations(prev => 
@@ -345,6 +346,63 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
     }
   };
   
+  // Template validation functions
+  const validateTemplateConditions = (template: any, deal: Deal) => {
+    // Check conditional logic
+    if (template.condition) {
+      const { field, operator, value } = template.condition;
+      const dealValue = deal[field as keyof Deal];
+
+      switch (operator) {
+        case '>':
+          return typeof dealValue === 'number' && dealValue > value;
+        case '<':
+          return typeof dealValue === 'number' && dealValue < value;
+        case 'equals':
+          return dealValue === value;
+        case 'contains':
+          return String(dealValue).toLowerCase().includes(String(value).toLowerCase());
+        case 'empty':
+          return !dealValue || dealValue === '';
+        default:
+          return false;
+      }
+    }
+    return true; // No conditions means always valid
+  };
+
+  const validateTemplateTriggers = (template: any) => {
+    // Check stage triggers
+    if (template.trigger?.startsWith('stage-')) {
+      return true; // Stage triggers are valid
+    }
+
+    // Check date triggers
+    if (template.trigger?.includes('days') || template.trigger?.includes('weekly') || template.trigger?.includes('milestone')) {
+      return true; // Date triggers are valid
+    }
+
+    // Check event triggers
+    if (template.trigger?.includes('changed') || template.trigger?.includes('uploaded') || template.trigger?.includes('overdue')) {
+      return true; // Event triggers are valid
+    }
+
+    return !template.trigger; // No trigger means valid (manual activation)
+  };
+
+  const getTemplateCapabilities = (template: any, deal: Deal) => {
+    return {
+      hasEmailSteps: template.steps.some((step: any) => step.type === 'email'),
+      hasTaskSteps: template.steps.some((step: any) => step.type === 'task'),
+      hasCommunicationSteps: template.steps.some((step: any) => step.type === 'communication'),
+      hasConditionalLogic: !!template.condition,
+      hasStageTriggers: !!template.trigger?.startsWith('stage-'),
+      hasDateTriggers: !!(template.trigger?.includes('days') || template.trigger?.includes('weekly') || template.trigger?.includes('milestone')),
+      isConditionValid: validateTemplateConditions(template, deal),
+      isTriggerValid: validateTemplateTriggers(template)
+    };
+  };
+
   // Pre-defined automation templates
   const automationTemplates = [
     {
@@ -1090,10 +1148,18 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
 
       let automationData;
       if (aiResponse.ok) {
-        automationData = await aiResponse.json();
-      } else {
-        // Fallback to client-side generation if Netlify function not available
-        console.warn('AI service not available, using fallback generation');
+        const responseText = await aiResponse.text();
+        try {
+          automationData = JSON.parse(responseText);
+        } catch (parseError) {
+          console.warn('Failed to parse AI response as JSON, using fallback:', parseError);
+          automationData = null;
+        }
+      }
+
+      // Fallback to client-side generation if Netlify function not available or JSON parsing failed
+      if (!automationData) {
+        console.warn('AI service not available or returned invalid JSON, using fallback generation');
         automationData = {
           name: `${deal.title} Closing Sequence`,
           description: 'AI-generated sequence to move this deal to closed-won stage',
@@ -1104,35 +1170,43 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
               type: 'email',
               name: 'Value Proposition Reinforcement',
               details: `Email highlighting key value propositions specific to ${deal.company}`,
-              status: 'pending'
+              status: 'pending',
+              emailSubject: `Enhanced Value Proposition for ${deal.title}`,
+              emailBody: `Hi {contact},\n\nI wanted to follow up on our discussion about ${deal.title}. Based on your needs, here are the key value propositions that make our solution ideal for ${deal.company}...`
             },
             {
               id: `s${Date.now()}-2`,
               type: 'delay',
               name: 'Wait for Response',
               details: 'Wait 3 days for a response before proceeding',
-              status: 'pending'
+              status: 'pending',
+              delayDays: 3
             },
             {
               id: `s${Date.now()}-3`,
               type: 'task',
               name: 'Decision Maker Call',
               details: `Schedule call with primary decision maker at ${deal.company}`,
-              status: 'pending'
+              status: 'pending',
+              taskTitle: `URGENT: Schedule decision maker call for ${deal.title}`,
+              taskPriority: 'high'
             },
             {
               id: `s${Date.now()}-4`,
               type: 'delay',
               name: 'Wait for Decision',
               details: 'Wait 5 days for internal decision process',
-              status: 'pending'
+              status: 'pending',
+              delayDays: 5
             },
             {
               id: `s${Date.now()}-5`,
               type: 'email',
               name: 'Contract Review',
               details: 'Send final contract for review and signature',
-              status: 'pending'
+              status: 'pending',
+              emailSubject: `Contract Ready for Review - ${deal.title}`,
+              emailBody: `Hi {contact},\n\nThe contract for ${deal.title} is ready for your review. Please find attached the final agreement...`
             }
           ]
         };
@@ -1193,30 +1267,62 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
   };
 
   const executeEmailStep = async (step: any, deal: Deal) => {
-    const subject = (step.emailSubject || '')
-      .replace('{deal}', deal.title)
-      .replace('{company}', deal.company)
-      .replace('{contact}', deal.contact || '');
+    try {
+      const subject = (step.emailSubject || '')
+        .replace('{deal}', deal.title)
+        .replace('{company}', deal.company)
+        .replace('{contact}', deal.contact || '');
 
-    const body = (step.emailBody || '')
-      .replace('{deal}', deal.title)
-      .replace('{company}', deal.company)
-      .replace('{contact}', deal.contact || '');
+      const body = (step.emailBody || '')
+        .replace('{deal}', deal.title)
+        .replace('{company}', deal.company)
+        .replace('{contact}', deal.contact || '');
 
-    // Use mailto for email
-    const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(mailtoUrl, '_blank');
+      // Validate email content
+      if (!subject.trim()) {
+        throw new Error('Email subject cannot be empty');
+      }
 
-    // Log the communication
-    const supabase = getSupabaseService();
-    await supabase.createCommunication({
-      type: 'email',
-      subject,
-      content: body,
-      direction: 'outbound',
-      dealId: deal.id,
-      createdBy: 'automation'
-    });
+      if (!body.trim()) {
+        throw new Error('Email body cannot be empty');
+      }
+
+      // Use mailto for email - ensure proper encoding
+      const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+      // Check if mailto is supported
+      if (typeof window !== 'undefined' && window.open) {
+        const mailWindow = window.open(mailtoUrl, '_blank');
+
+        // Fallback if popup blocked
+        if (!mailWindow || mailWindow.closed || typeof mailWindow.closed === 'undefined') {
+          // Copy to clipboard as fallback
+          if (navigator.clipboard) {
+            const emailContent = `Subject: ${subject}\n\n${body}`;
+            await navigator.clipboard.writeText(emailContent);
+            alert('Email client could not be opened. Email content copied to clipboard.');
+          } else {
+            alert('Please copy this email content manually:\n\n' + `Subject: ${subject}\n\n${body}`);
+          }
+        }
+      } else {
+        throw new Error('Email functionality not available in this environment');
+      }
+
+      // Log the communication
+      const supabase = getSupabaseService();
+      await supabase.createCommunication({
+        type: 'email',
+        subject,
+        content: body,
+        direction: 'outbound',
+        dealId: deal.id,
+        createdBy: 'automation'
+      });
+    } catch (error) {
+      console.error('Failed to execute email step:', error);
+      throw error; // Re-throw to be handled by caller
+    }
   };
 
   const executeTaskStep = async (step: any, deal: Deal) => {
@@ -1701,82 +1807,233 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
           <span className="text-sm text-gray-500">{automationTemplates.length + availableAutomations.length} available</span>
         </div>
 
+        {/* Template Validation Summary */}
+        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 mb-6">
+          <h5 className="text-sm font-medium text-blue-800 mb-3">Template Validation Summary</h5>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div className="text-center">
+              <div className="text-lg font-bold text-blue-600">{automationTemplates.length}</div>
+              <div className="text-blue-700">Total Templates</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-green-600">
+                {automationTemplates.filter(t => getTemplateCapabilities(t, deal).isConditionValid).length}
+              </div>
+              <div className="text-blue-700">Valid Conditions</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-blue-600">
+                {automationTemplates.filter(t => getTemplateCapabilities(t, deal).isTriggerValid).length}
+              </div>
+              <div className="text-blue-700">Valid Triggers</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-purple-600">
+                {automationTemplates.filter(t => getTemplateCapabilities(t, deal).hasEmailSteps).length}
+              </div>
+              <div className="text-blue-700">Email Templates</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Controls */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setFilterType('all')}
+              className={`px-3 py-1 text-xs rounded ${filterType === 'all' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}
+            >
+              All Templates ({automationTemplates.length})
+            </button>
+            <button
+              onClick={() => setFilterType('valid')}
+              className={`px-3 py-1 text-xs rounded ${filterType === 'valid' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
+            >
+              Valid Only ({automationTemplates.filter(t => getTemplateCapabilities(t, deal).isConditionValid && getTemplateCapabilities(t, deal).isTriggerValid).length})
+            </button>
+            <button
+              onClick={() => setFilterType('invalid')}
+              className={`px-3 py-1 text-xs rounded ${filterType === 'invalid' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}
+            >
+              Needs Fix ({automationTemplates.filter(t => !getTemplateCapabilities(t, deal).isConditionValid || !getTemplateCapabilities(t, deal).isTriggerValid).length})
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Template Automations */}
-          {automationTemplates.map(template => (
-            <div key={template.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow duration-200">
-              <div className="flex items-start space-x-3">
-                <div className="p-2 rounded-lg bg-blue-100">
-                  {React.createElement(getAutomationTypeIcon(template.type), {
-                    className: `w-5 h-5 ${getAutomationTypeColor(template.type)}`
-                  })}
-                </div>
+          {automationTemplates
+            .filter(template => {
+              const capabilities = getTemplateCapabilities(template, deal);
+              switch (filterType) {
+                case 'valid': return capabilities.isConditionValid && capabilities.isTriggerValid;
+                case 'invalid': return !capabilities.isConditionValid || !capabilities.isTriggerValid;
+                default: return true;
+              }
+            })
+            .map(template => {
+              const capabilities = getTemplateCapabilities(template, deal);
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h5 className="text-base font-medium text-gray-900 truncate">{template.name}</h5>
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${getAutomationTypeBadgeColor(template.type)}`}>
-                      Template
-                    </span>
-                  </div>
-
-                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{template.description}</p>
-
-                  {template.condition && (
-                    <div className="mt-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                      Condition: {template.condition.field} {template.condition.operator} {template.condition.value}
-                    </div>
-                  )}
-
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-center text-xs text-gray-500">
-                      <Clock className="w-3 h-3 mr-1" />
-                      <span>{template.steps.length} steps</span>
+              return (
+                <div key={template.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow duration-200">
+                  <div className="flex items-start space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-100">
+                      {React.createElement(getAutomationTypeIcon(template.type), {
+                        className: `w-5 h-5 ${getAutomationTypeColor(template.type)}`
+                      })}
                     </div>
 
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => toggleExpand(template.id)}
-                        className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                      >
-                        Preview
-                      </button>
-                      <button
-                        onClick={() => createAutomationFromTemplate(template)}
-                        className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                      >
-                        Use Template
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Expanded Preview */}
-              {expandedAutomations.includes(template.id) && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <h6 className="text-xs font-medium text-gray-700 uppercase mb-2">Steps Preview</h6>
-                  <div className="space-y-2">
-                    {template.steps.map((step, index) => {
-                      const StepIcon = getStepIcon(step.type);
-
-                      return (
-                        <div key={step.id} className="flex items-center space-x-2">
-                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
-                            <StepIcon className="w-3 h-3 text-gray-600" />
-                          </div>
-                          <span className="text-xs text-gray-700">{step.name}</span>
-                          {index < template.steps.length - 1 && (
-                            <ArrowRight className="w-3 h-3 text-gray-400" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h5 className="text-base font-medium text-gray-900 truncate">{template.name}</h5>
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${getAutomationTypeBadgeColor(template.type)}`}>
+                            Template
+                          </span>
+                          {/* Status indicators */}
+                          {capabilities.hasConditionalLogic && (
+                            <span className={`px-2 py-0.5 text-xs rounded-full ${capabilities.isConditionValid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                              {capabilities.isConditionValid ? '✓' : '✗'} Condition
+                            </span>
+                          )}
+                          {(capabilities.hasStageTriggers || capabilities.hasDateTriggers) && (
+                            <span className={`px-2 py-0.5 text-xs rounded-full ${capabilities.isTriggerValid ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                              {capabilities.isTriggerValid ? '✓' : '✗'} Trigger
+                            </span>
                           )}
                         </div>
-                      );
-                    })}
+                      </div>
+
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{template.description}</p>
+
+                      {/* Enhanced condition display */}
+                      {template.condition && (
+                        <div className={`mt-2 text-xs px-2 py-1 rounded ${
+                          capabilities.isConditionValid
+                            ? 'text-green-700 bg-green-50 border border-green-200'
+                            : 'text-red-700 bg-red-50 border border-red-200'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <span>
+                              Condition: {template.condition.field} {template.condition.operator} {template.condition.value}
+                            </span>
+                            <span className="font-medium">
+                              {capabilities.isConditionValid ? '✓ Valid' : '✗ Invalid'}
+                            </span>
+                          </div>
+                          {!capabilities.isConditionValid && (
+                            <div className="mt-1 text-xs opacity-75">
+                              Current deal value: {String(deal[template.condition.field as keyof Deal] || 'undefined')}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Enhanced trigger display */}
+                      {template.trigger && (
+                        <div className={`mt-2 text-xs px-2 py-1 rounded ${
+                          capabilities.isTriggerValid
+                            ? 'text-blue-700 bg-blue-50 border border-blue-200'
+                            : 'text-red-700 bg-red-50 border border-red-200'
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <span>Trigger: {template.trigger.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                            <span className="font-medium">
+                              {capabilities.isTriggerValid ? '✓ Valid' : '✗ Invalid'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Clock className="w-3 h-3 mr-1" />
+                          <span>{template.steps.length} steps</span>
+                          {/* Step type indicators */}
+                          {capabilities.hasEmailSteps && <span title="Has email steps"><Mail className="w-3 h-3 ml-2 text-blue-500" /></span>}
+                          {capabilities.hasTaskSteps && <span title="Has task steps"><Check className="w-3 h-3 ml-1 text-green-500" /></span>}
+                          {capabilities.hasCommunicationSteps && <span title="Has communication steps"><FileText className="w-3 h-3 ml-1 text-purple-500" /></span>}
+                        </div>
+
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => toggleExpand(template.id)}
+                            className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                          >
+                            Preview
+                          </button>
+                          <button
+                            onClick={() => createAutomationFromTemplate(template)}
+                            disabled={!capabilities.isConditionValid || !capabilities.isTriggerValid}
+                            className={`text-xs px-2 py-1 rounded transition-colors ${
+                              capabilities.isConditionValid && capabilities.isTriggerValid
+                                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
+                            title={
+                              !capabilities.isConditionValid || !capabilities.isTriggerValid
+                                ? 'Template has validation issues'
+                                : 'Use this template'
+                            }
+                          >
+                            {capabilities.isConditionValid && capabilities.isTriggerValid ? 'Use Template' : 'Fix Issues'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Expanded Preview */}
+                  {expandedAutomations.includes(template.id) && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <h6 className="text-xs font-medium text-gray-700 uppercase mb-2">Steps Preview</h6>
+                      <div className="space-y-2">
+                        {template.steps.map((step: any, index: number) => {
+                          const StepIcon = getStepIcon(step.type);
+
+                          return (
+                            <div key={step.id} className="flex items-center space-x-2">
+                              <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
+                                <StepIcon className="w-3 h-3 text-gray-600" />
+                              </div>
+                              <span className="text-xs text-gray-700">{step.name}</span>
+                              {index < template.steps.length - 1 && (
+                                <ArrowRight className="w-3 h-3 text-gray-400" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Validation Summary */}
+                      <div className="mt-4 pt-3 border-t border-gray-200">
+                        <h6 className="text-xs font-medium text-gray-700 uppercase mb-2">Validation Status</h6>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className={`p-2 rounded ${capabilities.hasEmailSteps ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-500'}`}>
+                            Email Steps: {capabilities.hasEmailSteps ? '✓' : '✗'}
+                          </div>
+                          <div className={`p-2 rounded ${capabilities.hasTaskSteps ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-500'}`}>
+                            Task Steps: {capabilities.hasTaskSteps ? '✓' : '✗'}
+                          </div>
+                          <div className={`p-2 rounded ${capabilities.hasCommunicationSteps ? 'bg-purple-50 text-purple-700' : 'bg-gray-50 text-gray-500'}`}>
+                            Communication Steps: {capabilities.hasCommunicationSteps ? '✓' : '✗'}
+                          </div>
+                          <div className={`p-2 rounded ${capabilities.isConditionValid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                            Conditions: {capabilities.isConditionValid ? '✓' : '✗'}
+                          </div>
+                          <div className={`p-2 rounded ${capabilities.isTriggerValid ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'}`}>
+                            Triggers: {capabilities.isTriggerValid ? '✓' : '✗'}
+                          </div>
+                          <div className={`p-2 rounded ${capabilities.hasStageTriggers || capabilities.hasDateTriggers ? 'bg-yellow-50 text-yellow-700' : 'bg-gray-50 text-gray-500'}`}>
+                            Automation Type: {capabilities.hasStageTriggers ? 'Stage' : capabilities.hasDateTriggers ? 'Date' : 'Manual'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              );
+            })}
 
           {/* Custom Automations */}
           {availableAutomations.map(automation => (
