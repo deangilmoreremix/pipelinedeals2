@@ -48,14 +48,34 @@ interface Automation {
   type: 'drip' | 'event' | 'date' | 'ai';
   status: 'active' | 'paused' | 'completed' | 'draft';
   progress?: number;
+  condition?: {
+    field: string;
+    operator: string;
+    value?: any;
+  };
+  trigger?: string;
   steps: {
     id: string;
-    type: 'email' | 'call' | 'task' | 'ai' | 'delay';
+    type: 'email' | 'call' | 'task' | 'ai' | 'delay' | 'communication' | 'attachment';
     name: string;
     details: string;
     status: 'pending' | 'active' | 'completed' | 'failed';
     scheduledAt?: Date;
     completedAt?: Date;
+    // Email specific
+    emailSubject?: string;
+    emailBody?: string;
+    // Task specific
+    taskTitle?: string;
+    taskPriority?: 'low' | 'medium' | 'high';
+    // Communication specific
+    communicationType?: 'email' | 'call' | 'meeting' | 'note';
+    communicationContent?: string;
+    // Attachment specific
+    attachmentName?: string;
+    attachmentType?: string;
+    // Delay specific
+    delayDays?: number;
   }[];
   createdAt: Date;
   updatedAt: Date;
@@ -325,6 +345,728 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
     }
   };
   
+  // Pre-defined automation templates
+  const automationTemplates = [
+    {
+      id: 'follow-up-basic',
+      name: 'Basic Follow-up Sequence',
+      description: 'Simple 3-step follow-up for new deals',
+      type: 'drip' as const,
+      steps: [
+        {
+          id: 'email-intro',
+          type: 'email' as const,
+          name: 'Initial Introduction',
+          details: 'Send introduction email with value proposition',
+          status: 'pending' as const,
+          emailSubject: 'Introduction and Value Proposition for {deal}',
+          emailBody: 'Hi {contact},\n\nI\'d like to discuss how we can help {company} achieve their goals...'
+        },
+        {
+          id: 'delay-3days',
+          type: 'delay' as const,
+          name: 'Wait 3 Days',
+          details: 'Allow time for initial response',
+          status: 'pending' as const,
+          delayDays: 3
+        },
+        {
+          id: 'task-followup',
+          type: 'task' as const,
+          name: 'Follow-up Call',
+          details: 'Schedule follow-up call to discuss proposal',
+          status: 'pending' as const,
+          taskTitle: 'Call {contact} to discuss {deal}',
+          taskPriority: 'medium' as const
+        }
+      ]
+    },
+    {
+      id: 'high-value-acceleration',
+      name: 'High-Value Deal Acceleration',
+      description: 'Accelerated sequence for deals over $50K',
+      type: 'event' as const,
+      condition: { field: 'value', operator: '>', value: 50000 },
+      steps: [
+        {
+          id: 'task-executive-meeting',
+          type: 'task' as const,
+          name: 'Schedule Executive Meeting',
+          details: 'Arrange meeting with key decision makers',
+          status: 'pending' as const,
+          taskTitle: 'URGENT: Schedule executive meeting for {deal}',
+          taskPriority: 'high' as const
+        },
+        {
+          id: 'email-executive-intro',
+          type: 'email' as const,
+          name: 'Executive Introduction',
+          details: 'Send personalized introduction to executives',
+          status: 'pending' as const,
+          emailSubject: 'Executive Introduction - {deal}',
+          emailBody: 'Dear Executive Team,\n\nI\'m reaching out regarding our proposal for {company}...'
+        },
+        {
+          id: 'delay-1day',
+          type: 'delay' as const,
+          name: 'Quick Follow-up',
+          details: 'Follow up within 24 hours',
+          status: 'pending' as const,
+          delayDays: 1
+        },
+        {
+          id: 'task-custom-proposal',
+          type: 'task' as const,
+          name: 'Prepare Custom Proposal',
+          details: 'Create tailored proposal for high-value deal',
+          status: 'pending' as const,
+          taskTitle: 'Prepare custom proposal for {deal} - {company}',
+          taskPriority: 'high' as const
+        }
+      ]
+    },
+    {
+      id: 'stagnation-alert',
+      name: 'Stagnation Alert',
+      description: 'Alert when deals become inactive',
+      type: 'date' as const,
+      trigger: 'no-activity-7days',
+      steps: [
+        {
+          id: 'task-stagnation-check',
+          type: 'task' as const,
+          name: 'Check Deal Status',
+          details: 'URGENT: Review stagnant deal',
+          status: 'pending' as const,
+          taskTitle: 'URGENT: Check status of stagnant deal - {deal}',
+          taskPriority: 'high' as const
+        },
+        {
+          id: 'email-stagnation-followup',
+          type: 'email' as const,
+          name: 'Stagnation Follow-up',
+          details: 'Re-engage with inactive prospect',
+          status: 'pending' as const,
+          emailSubject: 'Following up on our {deal} discussion',
+          emailBody: 'Hi {contact},\n\nI wanted to follow up on our previous conversation about {deal}...'
+        },
+        {
+          id: 'communication-stagnation-log',
+          type: 'communication' as const,
+          name: 'Log Stagnation Alert',
+          details: 'Stagnation alert sent to prospect',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Stagnation alert sent - no activity for 7+ days'
+        }
+      ]
+    },
+    {
+      id: 'deadline-approaching',
+      name: 'Deadline Approaching',
+      description: 'Reminders before deal deadlines',
+      type: 'date' as const,
+      trigger: 'deadline-3days',
+      steps: [
+        {
+          id: 'task-deadline-push',
+          type: 'task' as const,
+          name: 'Final Push',
+          details: 'Make final push before deadline',
+          status: 'pending' as const,
+          taskTitle: 'FINAL PUSH: {deal} due in 3 days',
+          taskPriority: 'high' as const
+        },
+        {
+          id: 'email-deadline-reminder',
+          type: 'email' as const,
+          name: 'Deadline Reminder',
+          details: 'Final reminder before deadline',
+          status: 'pending' as const,
+          emailSubject: 'Final reminder: {deal} deadline approaching',
+          emailBody: 'Hi {contact},\n\nThis is a final reminder that our {deal} proposal is due soon...'
+        }
+      ]
+    },
+    {
+      id: 'stage-change-notification',
+      name: 'Stage Change Notification',
+      description: 'Notify when deal stages change',
+      type: 'event' as const,
+      trigger: 'stage-changed',
+      steps: [
+        {
+          id: 'communication-stage-log',
+          type: 'communication' as const,
+          name: 'Stage Change Log',
+          details: 'Deal stage changed to {newStage}',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Deal stage changed from {oldStage} to {newStage}'
+        },
+        {
+          id: 'task-crm-update',
+          type: 'task' as const,
+          name: 'Update CRM',
+          details: 'Update CRM with new stage information',
+          status: 'pending' as const,
+          taskTitle: 'Update CRM: {deal} moved to {newStage}',
+          taskPriority: 'medium' as const
+        }
+      ]
+    },
+    {
+      id: 'contact-update-required',
+      name: 'Contact Update Required',
+      description: 'Alert when contact info is missing',
+      type: 'event' as const,
+      condition: { field: 'contact', operator: 'empty' },
+      steps: [
+        {
+          id: 'task-research-contact',
+          type: 'task' as const,
+          name: 'Research Contact',
+          details: 'Find and update missing contact information',
+          status: 'pending' as const,
+          taskTitle: 'Research contact info for {deal} - {company}',
+          taskPriority: 'medium' as const
+        },
+        {
+          id: 'email-contact-request',
+          type: 'email' as const,
+          name: 'Contact Info Request',
+          details: 'Request updated contact details',
+          status: 'pending' as const,
+          emailSubject: 'Updated contact information needed',
+          emailBody: 'Hi there,\n\nWe need updated contact information to proceed with {deal}...'
+        },
+        {
+          id: 'communication-contact-log',
+          type: 'communication' as const,
+          name: 'Contact Update Requested',
+          details: 'Contact update request sent',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Contact update requested - missing information'
+        }
+      ]
+    },
+    {
+      id: 'deal-value-increase',
+      name: 'Value Increase Opportunity',
+      description: 'Explore upsell opportunities',
+      type: 'date' as const,
+      trigger: 'value-unchanged-14days',
+      steps: [
+        {
+          id: 'task-upsell-exploration',
+          type: 'task' as const,
+          name: 'Explore Upsell',
+          details: 'Look for additional services or products',
+          status: 'pending' as const,
+          taskTitle: 'Explore upsell opportunities for {deal}',
+          taskPriority: 'medium' as const
+        },
+        {
+          id: 'email-upsell-discussion',
+          type: 'email' as const,
+          name: 'Additional Services',
+          details: 'Discuss additional services that might interest them',
+          status: 'pending' as const,
+          emailSubject: 'Additional services for {company}',
+          emailBody: 'Hi {contact},\n\nIn addition to our {deal} proposal, we also offer...'
+        },
+        {
+          id: 'communication-upsell-log',
+          type: 'communication' as const,
+          name: 'Upsell Discussion',
+          details: 'Upsell opportunities discussed',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Upsell discussion initiated - exploring additional services'
+        }
+      ]
+    },
+    {
+      id: 'priority-escalation',
+      name: 'Priority Deal Escalation',
+      description: 'Escalate high-priority inactive deals',
+      type: 'event' as const,
+      condition: { field: 'priority', operator: 'equals', value: 'high' },
+      trigger: 'inactive-5days',
+      steps: [
+        {
+          id: 'task-priority-attention',
+          type: 'task' as const,
+          name: 'Priority Attention Required',
+          details: 'URGENT: High priority deal needs immediate attention',
+          status: 'pending' as const,
+          taskTitle: 'URGENT: High priority deal {deal} needs attention',
+          taskPriority: 'high' as const
+        },
+        {
+          id: 'email-priority-followup',
+          type: 'email' as const,
+          name: 'Priority Follow-up',
+          details: 'Follow up on high-priority deal',
+          status: 'pending' as const,
+          emailSubject: 'Priority follow-up on {deal}',
+          emailBody: 'Hi {contact},\n\nI\'m following up on our high-priority {deal} discussion...'
+        },
+        {
+          id: 'communication-priority-log',
+          type: 'communication' as const,
+          name: 'Priority Escalation',
+          details: 'Priority escalation initiated',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Priority escalation - high priority deal inactive for 5+ days'
+        }
+      ]
+    },
+    {
+      id: 'contract-preparation',
+      name: 'Contract Preparation',
+      description: 'Prepare contracts when deals move to negotiation',
+      type: 'event' as const,
+      trigger: 'stage-negotiation',
+      steps: [
+        {
+          id: 'task-contract-draft',
+          type: 'task' as const,
+          name: 'Prepare Contract Draft',
+          details: 'Create initial contract draft',
+          status: 'pending' as const,
+          taskTitle: 'Prepare contract draft for {deal}',
+          taskPriority: 'high' as const
+        },
+        {
+          id: 'attachment-contract-template',
+          type: 'attachment' as const,
+          name: 'Upload Contract Template',
+          details: 'Upload contract template for review',
+          status: 'pending' as const,
+          attachmentName: 'Contract_Template_{deal}.pdf',
+          attachmentType: 'contract'
+        },
+        {
+          id: 'email-contract-ready',
+          type: 'email' as const,
+          name: 'Contract Ready',
+          details: 'Notify that contract is ready for review',
+          status: 'pending' as const,
+          emailSubject: 'Contract draft ready for {deal}',
+          emailBody: 'Hi {contact},\n\nThe contract draft for {deal} is ready for your review...'
+        }
+      ]
+    },
+    {
+      id: 'win-celebration',
+      name: 'Win Celebration',
+      description: 'Celebrate when deals are won',
+      type: 'event' as const,
+      trigger: 'stage-closed-won',
+      steps: [
+        {
+          id: 'communication-win-log',
+          type: 'communication' as const,
+          name: 'Deal Won!',
+          details: '🎉 Deal successfully closed!',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: '🎉 DEAL WON! - {deal} closed successfully'
+        },
+        {
+          id: 'task-thank-you',
+          type: 'task' as const,
+          name: 'Send Thank You',
+          details: 'Send thank you note to champion',
+          status: 'pending' as const,
+          taskTitle: 'Send thank you note for {deal} win',
+          taskPriority: 'medium' as const
+        },
+        {
+          id: 'email-welcome-aboard',
+          type: 'email' as const,
+          name: 'Welcome Aboard',
+          details: 'Welcome new client onboard',
+          status: 'pending' as const,
+          emailSubject: 'Welcome to our team!',
+          emailBody: 'Congratulations! We\'re excited to have {company} as a client...'
+        }
+      ]
+    },
+    {
+      id: 'loss-analysis',
+      name: 'Loss Analysis',
+      description: 'Analyze why deals were lost',
+      type: 'event' as const,
+      trigger: 'stage-closed-lost',
+      steps: [
+        {
+          id: 'task-loss-analysis',
+          type: 'task' as const,
+          name: 'Document Loss Reason',
+          details: 'Document why the deal was lost',
+          status: 'pending' as const,
+          taskTitle: 'Analyze loss: {deal} - document reasons',
+          taskPriority: 'medium' as const
+        },
+        {
+          id: 'communication-loss-log',
+          type: 'communication' as const,
+          name: 'Loss Recorded',
+          details: 'Deal loss documented and analyzed',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Deal lost - analysis needed to improve future proposals'
+        },
+        {
+          id: 'email-thank-you-loss',
+          type: 'email' as const,
+          name: 'Thank You for Consideration',
+          details: 'Thank them for considering us',
+          status: 'pending' as const,
+          emailSubject: 'Thank you for considering us',
+          emailBody: 'Hi {contact},\n\nThank you for considering {company} for {deal}...'
+        }
+      ]
+    },
+    {
+      id: 'weekly-review',
+      name: 'Weekly Deal Review',
+      description: 'Weekly review of all open deals',
+      type: 'date' as const,
+      trigger: 'weekly-monday',
+      steps: [
+        {
+          id: 'task-weekly-review',
+          type: 'task' as const,
+          name: 'Weekly Deal Review',
+          details: 'Review all open deals and progress',
+          status: 'pending' as const,
+          taskTitle: 'Weekly deal review - check all open deals',
+          taskPriority: 'medium' as const
+        },
+        {
+          id: 'communication-weekly-log',
+          type: 'communication' as const,
+          name: 'Weekly Review Completed',
+          details: 'Weekly deal review completed',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Weekly deal review completed - all deals assessed'
+        },
+        {
+          id: 'task-overdue-followup',
+          type: 'task' as const,
+          name: 'Follow Up Overdue',
+          details: 'Follow up on overdue items from review',
+          status: 'pending' as const,
+          taskTitle: 'Follow up on overdue items from weekly review',
+          taskPriority: 'high' as const
+        }
+      ]
+    },
+    {
+      id: 'attachment-alert',
+      name: 'New Attachment Alert',
+      description: 'Alert when new files are uploaded',
+      type: 'event' as const,
+      trigger: 'attachment-uploaded',
+      steps: [
+        {
+          id: 'communication-attachment-log',
+          type: 'communication' as const,
+          name: 'New Attachment',
+          details: 'New file uploaded: {filename}',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'New attachment uploaded: {filename} ({filesize})'
+        },
+        {
+          id: 'task-review-document',
+          type: 'task' as const,
+          name: 'Review Document',
+          details: 'Review newly uploaded document',
+          status: 'pending' as const,
+          taskTitle: 'Review uploaded document: {filename}',
+          taskPriority: 'medium' as const
+        },
+        {
+          id: 'email-document-uploaded',
+          type: 'email' as const,
+          name: 'Document Uploaded',
+          details: 'Notify that document has been uploaded',
+          status: 'pending' as const,
+          emailSubject: 'Document uploaded for {deal}',
+          emailBody: 'Hi {contact},\n\nA new document has been uploaded for your review...'
+        }
+      ]
+    },
+    {
+      id: 'task-overdue-alert',
+      name: 'Task Overdue Alert',
+      description: 'Alert when deal tasks become overdue',
+      type: 'event' as const,
+      trigger: 'task-overdue',
+      steps: [
+        {
+          id: 'task-overdue-attention',
+          type: 'task' as const,
+          name: 'Overdue Task Attention',
+          details: 'URGENT: Overdue task requires immediate attention',
+          status: 'pending' as const,
+          taskTitle: 'URGENT: Overdue task - {taskTitle}',
+          taskPriority: 'high' as const
+        },
+        {
+          id: 'email-overdue-reminder',
+          type: 'email' as const,
+          name: 'Overdue Task Reminder',
+          details: 'Remind about overdue task',
+          status: 'pending' as const,
+          emailSubject: 'Overdue task reminder: {deal}',
+          emailBody: 'Hi {contact},\n\nThis is a reminder about an overdue task related to {deal}...'
+        },
+        {
+          id: 'communication-overdue-log',
+          type: 'communication' as const,
+          name: 'Overdue Alert Sent',
+          details: 'Overdue task alert sent',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Overdue task alert sent - requires immediate attention'
+        }
+      ]
+    },
+    {
+      id: 'deal-milestone',
+      name: 'Deal Age Milestone',
+      description: 'Celebrate deal age milestones',
+      type: 'date' as const,
+      trigger: 'age-milestone',
+      steps: [
+        {
+          id: 'communication-milestone-log',
+          type: 'communication' as const,
+          name: 'Deal Milestone',
+          details: 'Deal milestone reached: {age} days',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Deal milestone: {deal} has been active for {age} days'
+        },
+        {
+          id: 'task-progress-review',
+          type: 'task' as const,
+          name: 'Progress Review',
+          details: 'Review deal progress at milestone',
+          status: 'pending' as const,
+          taskTitle: 'Review progress: {deal} at {age} days',
+          taskPriority: 'medium' as const
+        },
+        {
+          id: 'email-progress-checkin',
+          type: 'email' as const,
+          name: 'Progress Check-in',
+          details: 'Check in on deal progress',
+          status: 'pending' as const,
+          emailSubject: 'Deal progress check-in - {deal}',
+          emailBody: 'Hi {contact},\n\nIt\'s been {age} days since we started discussing {deal}...'
+        }
+      ]
+    },
+    {
+      id: 'communication-gap',
+      name: 'Communication Gap Alert',
+      description: 'Alert when communication gaps occur',
+      type: 'date' as const,
+      trigger: 'no-communication-10days',
+      steps: [
+        {
+          id: 'task-reengage-prospect',
+          type: 'task' as const,
+          name: 'Re-engage Prospect',
+          details: 'Re-engage with prospect after communication gap',
+          status: 'pending' as const,
+          taskTitle: 'Re-engage prospect: {deal} - no communication for 10+ days',
+          taskPriority: 'medium' as const
+        },
+        {
+          id: 'email-reengagement',
+          type: 'email' as const,
+          name: 'Re-engagement Email',
+          details: 'Re-engage after period of no communication',
+          status: 'pending' as const,
+          emailSubject: 'Following up on our {deal} conversation',
+          emailBody: 'Hi {contact},\n\nI wanted to follow up on our previous conversation about {deal}...'
+        },
+        {
+          id: 'communication-reengagement-log',
+          type: 'communication' as const,
+          name: 'Re-engagement Initiated',
+          details: 'Re-engagement attempt after communication gap',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Re-engagement initiated after 10+ day communication gap'
+        }
+      ]
+    },
+    {
+      id: 'expansion-opportunity',
+      name: 'Deal Expansion Opportunity',
+      description: 'Explore expansion in negotiation stage',
+      type: 'event' as const,
+      trigger: 'stage-negotiation-7days',
+      steps: [
+        {
+          id: 'task-expansion-exploration',
+          type: 'task' as const,
+          name: 'Explore Expansion',
+          details: 'Look for opportunities to expand the deal',
+          status: 'pending' as const,
+          taskTitle: 'Explore expansion opportunities for {deal}',
+          taskPriority: 'medium' as const
+        },
+        {
+          id: 'email-expansion-discussion',
+          type: 'email' as const,
+          name: 'Additional Services',
+          details: 'Discuss additional services during negotiation',
+          status: 'pending' as const,
+          emailSubject: 'Additional services for {company}',
+          emailBody: 'Hi {contact},\n\nAs we finalize {deal}, you might also be interested in...'
+        },
+        {
+          id: 'communication-expansion-log',
+          type: 'communication' as const,
+          name: 'Expansion Discussed',
+          details: 'Expansion opportunities discussed',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Expansion opportunities discussed during negotiation phase'
+        }
+      ]
+    },
+    {
+      id: 'competitor-alert',
+      name: 'Competitor Mention Alert',
+      description: 'Alert when competitors are mentioned',
+      type: 'event' as const,
+      trigger: 'competitor-mentioned',
+      steps: [
+        {
+          id: 'task-competitor-response',
+          type: 'task' as const,
+          name: 'Address Competitor Concerns',
+          details: 'URGENT: Address competitor concerns immediately',
+          status: 'pending' as const,
+          taskTitle: 'URGENT: Address competitor concerns for {deal}',
+          taskPriority: 'high' as const
+        },
+        {
+          id: 'email-competitive-advantages',
+          type: 'email' as const,
+          name: 'Our Competitive Advantages',
+          details: 'Highlight competitive advantages',
+          status: 'pending' as const,
+          emailSubject: 'Our competitive advantages for {deal}',
+          emailBody: 'Hi {contact},\n\nI understand you\'re also considering other options...'
+        },
+        {
+          id: 'communication-competitor-log',
+          type: 'communication' as const,
+          name: 'Competitor Concern Addressed',
+          details: 'Competitor concerns addressed',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Competitor concerns addressed - competitive advantages highlighted'
+        }
+      ]
+    },
+    {
+      id: 'budget-discussion',
+      name: 'Budget Discussion Trigger',
+      description: 'Trigger when deal value changes significantly',
+      type: 'event' as const,
+      trigger: 'value-changed-20percent',
+      steps: [
+        {
+          id: 'task-budget-discussion',
+          type: 'task' as const,
+          name: 'Discuss Budget Implications',
+          details: 'Discuss budget implications of value change',
+          status: 'pending' as const,
+          taskTitle: 'Discuss budget implications for {deal} value change',
+          taskPriority: 'high' as const
+        },
+        {
+          id: 'email-updated-proposal',
+          type: 'email' as const,
+          name: 'Updated Proposal',
+          details: 'Send updated proposal based on budget discussion',
+          status: 'pending' as const,
+          emailSubject: 'Updated proposal for {deal}',
+          emailBody: 'Hi {contact},\n\nBased on our budget discussion, here\'s an updated proposal...'
+        },
+        {
+          id: 'communication-budget-log',
+          type: 'communication' as const,
+          name: 'Budget Discussion',
+          details: 'Budget discussion initiated due to value change',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Budget discussion initiated - deal value changed significantly'
+        }
+      ]
+    },
+    {
+      id: 'deal-handover',
+      name: 'Deal Handover Preparation',
+      description: 'Prepare when deals are transferred',
+      type: 'event' as const,
+      trigger: 'owner-changed',
+      steps: [
+        {
+          id: 'task-handover-notes',
+          type: 'task' as const,
+          name: 'Prepare Handover Notes',
+          details: 'Create comprehensive handover notes',
+          status: 'pending' as const,
+          taskTitle: 'Prepare handover notes for {deal}',
+          taskPriority: 'high' as const
+        },
+        {
+          id: 'attachment-handover-summary',
+          type: 'attachment' as const,
+          name: 'Upload Handover Summary',
+          details: 'Upload deal summary document',
+          status: 'pending' as const,
+          attachmentName: 'Deal_Handover_{deal}.pdf',
+          attachmentType: 'summary'
+        },
+        {
+          id: 'email-handover-notification',
+          type: 'email' as const,
+          name: 'Handover Notification',
+          details: 'Notify of deal ownership transfer',
+          status: 'pending' as const,
+          emailSubject: 'Deal handover: {deal}',
+          emailBody: 'Hi {contact},\n\n{deal} has been transferred to a new representative...'
+        },
+        {
+          id: 'communication-handover-log',
+          type: 'communication' as const,
+          name: 'Ownership Transferred',
+          details: 'Deal ownership transferred to new owner',
+          status: 'pending' as const,
+          communicationType: 'note' as const,
+          communicationContent: 'Deal ownership transferred from {oldOwner} to {newOwner}'
+        }
+      ]
+    }
+  ];
+
   const handleGenerateAutomation = async () => {
     try {
       setAiGenerating(true);
@@ -411,6 +1153,167 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
       setError('Failed to generate automation');
     } finally {
       setAiGenerating(false);
+    }
+  };
+
+  // Function to execute automation steps
+  const executeAutomationStep = async (automationId: string, stepIndex: number) => {
+    try {
+      const automation = [...activeAutomations, ...availableAutomations].find(a => a.id === automationId);
+      if (!automation || !automation.steps[stepIndex]) return;
+
+      const step = automation.steps[stepIndex];
+
+      // Execute step based on type
+      switch (step.type) {
+        case 'email':
+          await executeEmailStep(step, deal);
+          break;
+        case 'task':
+          await executeTaskStep(step, deal);
+          break;
+        case 'communication':
+          await executeCommunicationStep(step, deal);
+          break;
+        case 'attachment':
+          await executeAttachmentStep(step, deal);
+          break;
+        case 'delay':
+          await executeDelayStep(automationId, stepIndex);
+          return; // Don't mark as completed immediately
+      }
+
+      // Mark step as completed
+      await updateStepStatus(automationId, stepIndex, 'completed');
+
+    } catch (err) {
+      console.error('Failed to execute automation step:', err);
+      await updateStepStatus(automationId, stepIndex, 'failed');
+    }
+  };
+
+  const executeEmailStep = async (step: any, deal: Deal) => {
+    const subject = (step.emailSubject || '')
+      .replace('{deal}', deal.title)
+      .replace('{company}', deal.company)
+      .replace('{contact}', deal.contact || '');
+
+    const body = (step.emailBody || '')
+      .replace('{deal}', deal.title)
+      .replace('{company}', deal.company)
+      .replace('{contact}', deal.contact || '');
+
+    // Use mailto for email
+    const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailtoUrl, '_blank');
+
+    // Log the communication
+    const supabase = getSupabaseService();
+    await supabase.createCommunication({
+      type: 'email',
+      subject,
+      content: body,
+      direction: 'outbound',
+      dealId: deal.id,
+      createdBy: 'automation'
+    });
+  };
+
+  const executeTaskStep = async (step: any, deal: Deal) => {
+    const title = (step.taskTitle || '')
+      .replace('{deal}', deal.title)
+      .replace('{company}', deal.company)
+      .replace('{contact}', deal.contact || '');
+
+    const supabase = getSupabaseService();
+    await supabase.createTask({
+      title,
+      description: step.details,
+      priority: step.taskPriority || 'medium',
+      status: 'pending',
+      dealId: deal.id
+    });
+  };
+
+  const executeCommunicationStep = async (step: any, deal: Deal) => {
+    const content = (step.communicationContent || '')
+      .replace('{deal}', deal.title)
+      .replace('{company}', deal.company)
+      .replace('{contact}', deal.contact || '')
+      .replace('{oldStage}', deal.stage)
+      .replace('{newStage}', deal.stage)
+      .replace('{age}', '30')
+      .replace('{filename}', 'document.pdf')
+      .replace('{filesize}', '1MB')
+      .replace('{taskTitle}', 'task')
+      .replace('{oldOwner}', 'previous owner')
+      .replace('{newOwner}', 'new owner');
+
+    const supabase = getSupabaseService();
+    await supabase.createCommunication({
+      type: step.communicationType || 'note',
+      content,
+      direction: 'outbound', // Changed from 'internal' to 'outbound'
+      dealId: deal.id,
+      createdBy: 'automation'
+    });
+  };
+
+  const executeAttachmentStep = async (step: any, deal: Deal) => {
+    // For now, just log that an attachment should be uploaded
+    // In a real implementation, this would trigger file upload or generation
+    console.log('Attachment step executed:', step.attachmentName);
+  };
+
+  const executeDelayStep = async (automationId: string, stepIndex: number) => {
+    const automation = [...activeAutomations, ...availableAutomations].find(a => a.id === automationId);
+    if (!automation || !automation.steps[stepIndex]) return;
+
+    const step = automation.steps[stepIndex];
+    const delayMs = (step.delayDays || 1) * 24 * 60 * 60 * 1000; // Convert days to milliseconds
+
+    // Schedule next step execution
+    setTimeout(() => {
+      executeAutomationStep(automationId, stepIndex + 1);
+    }, delayMs);
+  };
+
+  const updateStepStatus = async (automationId: string, stepIndex: number, status: string) => {
+    const supabase = getSupabaseService();
+    // For now, just update the automation's last run time
+    // In a full implementation, this would update individual step status
+    await supabase.updateAutomation(automationId, {
+      lastRun: new Date(),
+      updatedAt: new Date()
+    });
+  };
+
+  const createAutomationFromTemplate = async (template: any) => {
+    try {
+      setSaving(true);
+      const supabase = getSupabaseService();
+
+      // Create automation from template
+      const newAutomation = await supabase.createAutomation({
+        name: template.name,
+        description: template.description,
+        type: template.type,
+        status: 'draft',
+        dealId: deal.id,
+        steps: template.steps.map((step: any) => ({
+          ...step,
+          id: `${step.id}-${Date.now()}`, // Make IDs unique
+          status: 'pending' as const
+        }))
+      });
+
+      setAvailableAutomations(prev => [...prev, newAutomation]);
+    } catch (err) {
+      const appError = handleAPIError(err, 'create-from-template');
+      logError(appError, 'DealAutomationPanel template creation');
+      setError('Failed to create automation from template');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -795,87 +1698,158 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
       <div>
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-base font-medium text-gray-900">Recommended Automations</h4>
-          <span className="text-sm text-gray-500">{availableAutomations.length} available</span>
+          <span className="text-sm text-gray-500">{automationTemplates.length + availableAutomations.length} available</span>
         </div>
-        
-        {availableAutomations.length === 0 ? (
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 text-center">
-            <p className="text-gray-500 text-sm">No recommended automations</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {availableAutomations.map(automation => (
-              <div key={automation.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow duration-200">
-                <div className="flex items-start space-x-3">
-                  <div className="p-2 rounded-lg bg-gray-100">
-                    {React.createElement(getAutomationTypeIcon(automation.type), { 
-                      className: `w-5 h-5 ${getAutomationTypeColor(automation.type)}` 
-                    })}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Template Automations */}
+          {automationTemplates.map(template => (
+            <div key={template.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-start space-x-3">
+                <div className="p-2 rounded-lg bg-blue-100">
+                  {React.createElement(getAutomationTypeIcon(template.type), {
+                    className: `w-5 h-5 ${getAutomationTypeColor(template.type)}`
+                  })}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-base font-medium text-gray-900 truncate">{template.name}</h5>
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${getAutomationTypeBadgeColor(template.type)}`}>
+                      Template
+                    </span>
                   </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h5 className="text-base font-medium text-gray-900 truncate">{automation.name}</h5>
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${getAutomationTypeBadgeColor(automation.type)}`}>
-                        {automation.type === 'drip' ? 'Sequence' : 
-                         automation.type === 'event' ? 'Event-Based' : 
-                         automation.type === 'date' ? 'Date-Based' : 'AI-Powered'}
-                      </span>
+
+                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{template.description}</p>
+
+                  {template.condition && (
+                    <div className="mt-2 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      Condition: {template.condition.field} {template.condition.operator} {template.condition.value}
                     </div>
-                    
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">{automation.description}</p>
-                    
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="flex items-center text-xs text-gray-500">
-                        <Clock className="w-3 h-3 mr-1" />
-                        <span>{automation.steps.length} steps</span>
-                      </div>
-                      
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => toggleExpand(automation.id)}
-                          className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                        >
-                          Preview
-                        </button>
-                        <button
-                          onClick={() => activateAutomation(automation.id)}
-                          className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                        >
-                          Activate
-                        </button>
-                      </div>
+                  )}
+
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Clock className="w-3 h-3 mr-1" />
+                      <span>{template.steps.length} steps</span>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => toggleExpand(template.id)}
+                        className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                      >
+                        Preview
+                      </button>
+                      <button
+                        onClick={() => createAutomationFromTemplate(template)}
+                        className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                      >
+                        Use Template
+                      </button>
                     </div>
                   </div>
                 </div>
-                
-                {/* Expanded Preview */}
-                {expandedAutomations.includes(automation.id) && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h6 className="text-xs font-medium text-gray-700 uppercase mb-2">Steps Preview</h6>
-                    <div className="space-y-2">
-                      {automation.steps.map((step, index) => {
-                        const StepIcon = getStepIcon(step.type);
-                        
-                        return (
-                          <div key={step.id} className="flex items-center space-x-2">
-                            <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
-                              <StepIcon className="w-3 h-3 text-gray-600" />
-                            </div>
-                            <span className="text-xs text-gray-700">{step.name}</span>
-                            {index < automation.steps.length - 1 && (
-                              <ArrowRight className="w-3 h-3 text-gray-400" />
-                            )}
+              </div>
+
+              {/* Expanded Preview */}
+              {expandedAutomations.includes(template.id) && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h6 className="text-xs font-medium text-gray-700 uppercase mb-2">Steps Preview</h6>
+                  <div className="space-y-2">
+                    {template.steps.map((step, index) => {
+                      const StepIcon = getStepIcon(step.type);
+
+                      return (
+                        <div key={step.id} className="flex items-center space-x-2">
+                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
+                            <StepIcon className="w-3 h-3 text-gray-600" />
                           </div>
-                        );
-                      })}
+                          <span className="text-xs text-gray-700">{step.name}</span>
+                          {index < template.steps.length - 1 && (
+                            <ArrowRight className="w-3 h-3 text-gray-400" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Custom Automations */}
+          {availableAutomations.map(automation => (
+            <div key={automation.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow duration-200">
+              <div className="flex items-start space-x-3">
+                <div className="p-2 rounded-lg bg-gray-100">
+                  {React.createElement(getAutomationTypeIcon(automation.type), {
+                    className: `w-5 h-5 ${getAutomationTypeColor(automation.type)}`
+                  })}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-base font-medium text-gray-900 truncate">{automation.name}</h5>
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${getAutomationTypeBadgeColor(automation.type)}`}>
+                      {automation.type === 'drip' ? 'Sequence' :
+                       automation.type === 'event' ? 'Event-Based' :
+                       automation.type === 'date' ? 'Date-Based' : 'AI-Powered'}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{automation.description}</p>
+
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Clock className="w-3 h-3 mr-1" />
+                      <span>{automation.steps.length} steps</span>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => toggleExpand(automation.id)}
+                        className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                      >
+                        Preview
+                      </button>
+                      <button
+                        onClick={() => activateAutomation(automation.id)}
+                        className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                      >
+                        Activate
+                      </button>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
-            ))}
-          </div>
-        )}
+
+              {/* Expanded Preview */}
+              {expandedAutomations.includes(automation.id) && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <h6 className="text-xs font-medium text-gray-700 uppercase mb-2">Steps Preview</h6>
+                  <div className="space-y-2">
+                    {automation.steps.map((step, index) => {
+                      const StepIcon = getStepIcon(step.type);
+
+                      return (
+                        <div key={step.id} className="flex items-center space-x-2">
+                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
+                            <StepIcon className="w-3 h-3 text-gray-600" />
+                          </div>
+                          <span className="text-xs text-gray-700">{step.name}</span>
+                          {index < automation.steps.length - 1 && (
+                            <ArrowRight className="w-3 h-3 text-gray-400" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
         </div>
       )}
 
