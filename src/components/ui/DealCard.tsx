@@ -1,19 +1,20 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { Deal } from '../../types';
-import { 
-  DollarSign, 
-  Edit3, 
-  Save, 
+import { logError, handleAPIError } from '../../utils/errorHandling';
+import {
+  DollarSign,
+  Edit3,
+  Save,
   X,
-  Trash2, 
-  User, 
-  UserPlus, 
-  Target, 
-  AlertCircle, 
-  CheckCircle, 
-  Calendar, 
-  Clock, 
-  Star, 
+  Trash2,
+  User,
+  UserPlus,
+  Target,
+  AlertCircle,
+  CheckCircle,
+  Calendar,
+  Clock,
+  Star,
   FileText,
   Upload,
   Brain,
@@ -42,6 +43,7 @@ export const DealCard: React.FC<DealCardProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [editForm, setEditForm] = useState({
@@ -56,9 +58,40 @@ export const DealCard: React.FC<DealCardProps> = ({
     tags: deal.tags || []
   });
 
-  const handleSave = async () => {
+  // Reset edit form when deal changes
+  useEffect(() => {
+    setEditForm({
+      company: deal.company,
+      value: deal.value,
+      stage: deal.stage,
+      priority: deal.priority,
+      contact: deal.contact || '',
+      contactId: deal.contactId || '',
+      notes: deal.notes || '',
+      nextFollowUp: deal.nextFollowUp || '',
+      tags: deal.tags || []
+    });
+  }, [deal]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle shortcuts when not editing
+      if (isEditing) return;
+
+      if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault();
+        setIsEditing(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isEditing]);
+
+  const handleSave = useCallback(async () => {
     if (!onUpdate) return;
-    
+
     setIsSaving(true);
     try {
       const updates: Partial<Deal> = {
@@ -71,19 +104,21 @@ export const DealCard: React.FC<DealCardProps> = ({
         notes: editForm.notes,
         nextFollowUp: editForm.nextFollowUp,
         tags: editForm.tags,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date()
       };
-      
+
       await onUpdate(deal.id, updates);
       setIsEditing(false);
     } catch (error) {
-      console.error('Failed to update deal:', error);
+      const appError = handleAPIError(error, 'deal-update');
+      logError(appError, 'DealCard save operation');
+      // TODO: Show error toast to user
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [onUpdate, deal.id, editForm, handleAPIError, logError]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setEditForm({
       company: deal.company,
       value: deal.value,
@@ -96,9 +131,9 @@ export const DealCard: React.FC<DealCardProps> = ({
       tags: deal.tags || []
     });
     setIsEditing(false);
-  };
+  }, [deal]);
 
-  const handleCardClick = (e: React.MouseEvent) => {
+  const handleCardClick = useCallback((e: React.MouseEvent) => {
     // Don't trigger the click if the user is clicking on a button or input
     if (
       (e.target as HTMLElement).closest('button') ||
@@ -106,61 +141,89 @@ export const DealCard: React.FC<DealCardProps> = ({
     ) {
       return;
     }
-    
+
     if (onClick) {
       onClick();
     }
-  };
+  }, [onClick]);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (onClick) onClick();
+    }
+  }, [onClick]);
+
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && onUpdate) {
-      // In a real app, you'd upload the file to a server
-      // For now, we'll just store the filename
-      const attachment = {
-        id: Date.now().toString(),
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        uploadedAt: new Date().toISOString()
-      };
-      
-      const currentAttachments = deal.attachments || [];
-      onUpdate(deal.id, {
-        attachments: [...currentAttachments, attachment],
-        updatedAt: new Date().toISOString()
-      });
+      try {
+        // Basic file validation
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+          throw new Error('File size exceeds 10MB limit');
+        }
+
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'text/plain'];
+        if (!allowedTypes.includes(file.type)) {
+          throw new Error('File type not supported');
+        }
+
+        const attachment = {
+          id: Date.now().toString(),
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          uploadedAt: new Date().toISOString()
+        };
+
+        const currentAttachments = deal.attachments || [];
+        onUpdate(deal.id, {
+          attachments: [...currentAttachments, attachment],
+          updatedAt: new Date()
+        });
+      } catch (error) {
+        const appError = handleAPIError(error, 'file-upload');
+        logError(appError, 'DealCard file upload');
+        // TODO: Show error toast to user
+      }
     }
-  };
+  }, [onUpdate, deal.id, deal.attachments, handleAPIError, logError]);
 
-  const removeAttachment = (attachmentId: string) => {
+  const removeAttachment = useCallback((attachmentId: string) => {
     if (!onUpdate) return;
-    
-    const updatedAttachments = (deal.attachments || []).filter(
-      att => att.id !== attachmentId
-    );
-    
-    onUpdate(deal.id, {
-      attachments: updatedAttachments,
-      updatedAt: new Date().toISOString()
-    });
-  };
 
-  const addTag = (tag: string) => {
+    try {
+      const updatedAttachments = (deal.attachments || []).filter(
+        att => att.id !== attachmentId
+      );
+
+      onUpdate(deal.id, {
+        attachments: updatedAttachments,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      const appError = handleAPIError(error, 'attachment-remove');
+      logError(appError, 'DealCard attachment removal');
+      // TODO: Show error toast to user
+    }
+  }, [onUpdate, deal.id, deal.attachments, handleAPIError, logError]);
+
+  const addTag = useCallback((tag: string) => {
     if (!tag.trim() || editForm.tags.includes(tag.trim())) return;
-    
+
     setEditForm(prev => ({
       ...prev,
       tags: [...prev.tags, tag.trim()]
     }));
-  };
+  }, [editForm.tags]);
 
-  const removeTag = (tagToRemove: string) => {
+  const removeTag = useCallback((tagToRemove: string) => {
     setEditForm(prev => ({
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
-  };
+  }, []);
 
   const getStageColor = (stage: string) => {
     const colors = {
@@ -216,24 +279,29 @@ export const DealCard: React.FC<DealCardProps> = ({
   };
 
   // Generate avatar URLs based on company and contact names
-  const getCompanyAvatar = (companyName: string) => {
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(companyName)}&background=3b82f6&color=ffffff&size=40`;
-  };
+  const companyAvatar = useMemo(() =>
+    deal.companyAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(deal.company)}&background=3b82f6&color=ffffff&size=40`,
+    [deal.companyAvatar, deal.company]
+  );
 
-  const getContactAvatar = (contactName: string) => {
+  const getContactAvatar = useCallback((contactName: string) => {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(contactName)}&background=10b981&color=ffffff&size=32`;
-  };
+  }, []);
 
   return (
     <div
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer"
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
       onClick={handleCardClick}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={`Deal card for ${deal.company}, value ${formatCurrency(deal.value)}, stage ${deal.stage}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
           <img
-            src={deal.companyAvatar || getCompanyAvatar(deal.company)}
+            src={companyAvatar}
             alt={deal.company}
             className="w-10 h-10 rounded-lg object-cover dark:border-gray-600"
           />
@@ -243,7 +311,9 @@ export const DealCard: React.FC<DealCardProps> = ({
                 type="text"
                 value={editForm.company}
                 onChange={(e) => setEditForm(prev => ({ ...prev, company: e.target.value }))}
+                aria-label="Company name"
                 className="text-lg font-semibold text-gray-900 dark:text-white bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:outline-none dark:focus:border-blue-400"
+                required
               />
             ) : (
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{deal.title || deal.company}</h3>
@@ -268,7 +338,8 @@ export const DealCard: React.FC<DealCardProps> = ({
                 onAIResearch(deal);
               }}
               disabled={isResearching}
-              className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              aria-label={isResearching ? `Researching ${deal.company}` : `Research ${deal.company} with AI`}
+              className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
             >
               {isResearching ? (
                 <>
@@ -292,7 +363,8 @@ export const DealCard: React.FC<DealCardProps> = ({
                   handleSave();
                 }}
                 disabled={isSaving}
-                className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+                aria-label={isSaving ? "Saving changes" : "Save changes"}
+                className="flex items-center px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
               >
                 {isSaving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -305,7 +377,8 @@ export const DealCard: React.FC<DealCardProps> = ({
                   e.stopPropagation();
                   handleCancel();
                 }}
-                className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+                aria-label="Cancel editing"
+                className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -317,7 +390,8 @@ export const DealCard: React.FC<DealCardProps> = ({
                   e.stopPropagation();
                   setIsEditing(true);
                 }}
-                className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+                aria-label={`Edit deal ${deal.company}`}
+                className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
               >
                 <Edit3 className="w-4 h-4" />
               </button>
@@ -325,11 +399,29 @@ export const DealCard: React.FC<DealCardProps> = ({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onDelete(deal.id);
+                    // TODO: Add confirmation dialog
+                    if (window.confirm(`Are you sure you want to delete the deal for ${deal.company}?`)) {
+                      setIsDeleting(true);
+                      try {
+                        onDelete(deal.id);
+                      } catch (error) {
+                        const appError = handleAPIError(error, 'deal-delete');
+                        logError(appError, 'DealCard delete operation');
+                        // TODO: Show error toast to user
+                      } finally {
+                        setIsDeleting(false);
+                      }
+                    }
                   }}
-                  className="flex items-center px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30"
+                  disabled={isDeleting}
+                  aria-label={isDeleting ? `Deleting deal ${deal.company}` : `Delete deal ${deal.company}`}
+                  className="flex items-center px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  {isDeleting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
                 </button>
               )}
             </div>
@@ -346,8 +438,11 @@ export const DealCard: React.FC<DealCardProps> = ({
               type="number"
               value={editForm.value}
               onChange={(e) => setEditForm(prev => ({ ...prev, value: parseInt(e.target.value) || 0 }))}
+              aria-label="Deal value"
               className="text-lg font-semibold text-green-600 dark:text-green-400 bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none w-full"
               onClick={(e) => e.stopPropagation()}
+              min="0"
+              step="1000"
             />
           ) : (
             <span className="text-lg font-semibold text-green-600 dark:text-green-400">
@@ -382,7 +477,7 @@ export const DealCard: React.FC<DealCardProps> = ({
 
       {/* Footer */}
       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-100 dark:border-gray-700">
-        <span>{formatDate(deal.createdAt)}</span>
+        <span>{formatDate(deal.createdAt.toISOString())}</span>
         <span className="text-blue-600 dark:text-blue-400 hover:underline">View Details</span>
       </div>
     </div>
