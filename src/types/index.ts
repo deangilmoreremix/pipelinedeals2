@@ -63,6 +63,34 @@ export interface PipelineStats {
   stageValues: Record<string, number>;
 }
 
+export interface Contact {
+  id: string;
+  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  position?: string;
+  avatar?: string;
+  aiScore?: number;
+  interestLevel?: 'high' | 'medium' | 'low';
+  status?: 'active' | 'inactive' | 'prospect';
+  sources: string[];
+  tags?: string[];
+  notes?: string;
+  socialProfiles?: {
+    linkedin?: string;
+    twitter?: string;
+    facebook?: string;
+    website?: string;
+  };
+  lastActivity?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  customFields?: Record<string, string | number | boolean>;
+}
+
 export interface AIInsight {
   dealId: string;
   score: number;
