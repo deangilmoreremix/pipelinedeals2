@@ -305,7 +305,7 @@ export const DealCard: React.FC<DealCardProps> = ({
                   e.stopPropagation();
                   handleCancel();
                 }}
-                className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -317,7 +317,7 @@ export const DealCard: React.FC<DealCardProps> = ({
                   e.stopPropagation();
                   setIsEditing(true);
                 }}
-                className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                className="flex items-center px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
               >
                 <Edit3 className="w-4 h-4" />
               </button>
@@ -327,7 +327,7 @@ export const DealCard: React.FC<DealCardProps> = ({
                     e.stopPropagation();
                     onDelete(deal.id);
                   }}
-                  className="flex items-center px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100"
+                  className="flex items-center px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
