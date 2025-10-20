@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Deal } from '../../types';
+import { getSupabaseService } from '../../services/supabaseService';
+import { logError, handleAPIError } from '../../utils/errorHandling';
 import { 
   Zap, 
   Mail, 
@@ -62,118 +64,39 @@ interface Automation {
 }
 
 export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }) => {
-  const [activeAutomations, setActiveAutomations] = useState<Automation[]>([
-    {
-      id: '1',
-      name: 'Deal Progression Sequence',
-      description: 'Automated sequence to move deal through pipeline stages',
-      type: 'drip',
-      status: 'active',
-      progress: 60,
-      steps: [
-        {
-          id: 's1',
-          type: 'email',
-          name: 'Proposal Follow-up',
-          details: 'Send follow-up email asking for feedback on proposal',
-          status: 'completed',
-          scheduledAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-          completedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-        },
-        {
-          id: 's2',
-          type: 'delay',
-          name: 'Wait 3 Days',
-          details: 'Wait 3 days before next step',
-          status: 'completed',
-          scheduledAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-          completedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000)
-        },
-        {
-          id: 's3',
-          type: 'task',
-          name: 'Call to Discuss Proposal',
-          details: 'Schedule call to discuss proposal and address questions',
-          status: 'completed',
-          scheduledAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-          completedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000)
-        },
-        {
-          id: 's4',
-          type: 'delay',
-          name: 'Wait 5 Days',
-          details: 'Wait 5 days before next step',
-          status: 'active',
-          scheduledAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)
-        },
-        {
-          id: 's5',
-          type: 'email',
-          name: 'Contract Draft',
-          details: 'Send contract draft for review',
-          status: 'pending',
-          scheduledAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
-        }
-      ],
-      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      lastRun: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-      nextRun: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)
+  const [activeAutomations, setActiveAutomations] = useState<Automation[]>([]);
+  const [availableAutomations, setAvailableAutomations] = useState<Automation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Load automations on component mount
+  useEffect(() => {
+    loadAutomations();
+  }, [deal.id]);
+
+  const loadAutomations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const supabase = getSupabaseService();
+      const automations = await supabase.getAutomations(deal.id);
+
+      // Separate active and available automations
+      const active = automations.filter(a => a.status === 'active' || a.status === 'paused');
+      const available = automations.filter(a => a.status === 'draft' || a.status === 'completed');
+
+      setActiveAutomations(active);
+      setAvailableAutomations(available);
+    } catch (err) {
+      const appError = handleAPIError(err, 'load-automations');
+      logError(appError, 'DealAutomationPanel load');
+      setError('Failed to load automations');
+    } finally {
+      setLoading(false);
     }
-  ]);
-  
-  const [availableAutomations, setAvailableAutomations] = useState<Automation[]>([
-    {
-      id: '2',
-      name: 'Negotiation Accelerator',
-      description: 'Sequence to move deal through negotiation and close faster',
-      type: 'drip',
-      status: 'draft',
-      steps: [
-        {
-          id: 's1',
-          type: 'email',
-          name: 'Negotiation Summary',
-          details: 'Send email summarizing negotiation points',
-          status: 'pending'
-        },
-        {
-          id: 's2',
-          type: 'task',
-          name: 'Schedule Decision Call',
-          details: 'Set up final decision call with stakeholders',
-          status: 'pending'
-        }
-      ],
-      createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
-    },
-    {
-      id: '3',
-      name: 'Deal Risk Mitigation',
-      description: 'AI-driven sequence to identify and address deal risks',
-      type: 'ai',
-      status: 'draft',
-      steps: [
-        {
-          id: 's1',
-          type: 'ai',
-          name: 'Risk Analysis',
-          details: 'AI analyzes deal for potential risks',
-          status: 'pending'
-        },
-        {
-          id: 's2',
-          type: 'email',
-          name: 'Risk Mitigation Plan',
-          details: 'Send personalized risk mitigation strategy',
-          status: 'pending'
-        }
-      ],
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
-    }
-  ]);
+  };
   
   const [expandedAutomations, setExpandedAutomations] = useState<string[]>(['1']);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -188,31 +111,85 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
     );
   };
   
-  const activateAutomation = (id: string) => {
-    // Move from available to active
-    const automation = availableAutomations.find(a => a.id === id);
-    if (automation) {
-      const updated = { ...automation, status: 'active' as const };
-      setAvailableAutomations(prev => prev.filter(a => a.id !== id));
-      setActiveAutomations(prev => [...prev, updated]);
+  const activateAutomation = async (id: string) => {
+    try {
+      setSaving(true);
+      const supabase = getSupabaseService();
+
+      // Update automation status in database
+      await supabase.updateAutomation(id, { status: 'active' });
+
+      // Update local state
+      const automation = availableAutomations.find(a => a.id === id);
+      if (automation) {
+        const updated = { ...automation, status: 'active' as const };
+        setAvailableAutomations(prev => prev.filter(a => a.id !== id));
+        setActiveAutomations(prev => [...prev, updated]);
+      }
+    } catch (err) {
+      const appError = handleAPIError(err, 'activate-automation');
+      logError(appError, 'DealAutomationPanel activate');
+      setError('Failed to activate automation');
+    } finally {
+      setSaving(false);
     }
   };
   
-  const pauseAutomation = (id: string) => {
-    setActiveAutomations(prev => 
-      prev.map(a => a.id === id ? { ...a, status: 'paused' as const } : a)
-    );
+  const pauseAutomation = async (id: string) => {
+    try {
+      setSaving(true);
+      const supabase = getSupabaseService();
+      await supabase.updateAutomation(id, { status: 'paused' });
+
+      setActiveAutomations(prev =>
+        prev.map(a => a.id === id ? { ...a, status: 'paused' as const } : a)
+      );
+    } catch (err) {
+      const appError = handleAPIError(err, 'pause-automation');
+      logError(appError, 'DealAutomationPanel pause');
+      setError('Failed to pause automation');
+    } finally {
+      setSaving(false);
+    }
   };
-  
-  const resumeAutomation = (id: string) => {
-    setActiveAutomations(prev => 
-      prev.map(a => a.id === id ? { ...a, status: 'active' as const } : a)
-    );
+
+  const resumeAutomation = async (id: string) => {
+    try {
+      setSaving(true);
+      const supabase = getSupabaseService();
+      await supabase.updateAutomation(id, { status: 'active' });
+
+      setActiveAutomations(prev =>
+        prev.map(a => a.id === id ? { ...a, status: 'active' as const } : a)
+      );
+    } catch (err) {
+      const appError = handleAPIError(err, 'resume-automation');
+      logError(appError, 'DealAutomationPanel resume');
+      setError('Failed to resume automation');
+    } finally {
+      setSaving(false);
+    }
   };
-  
-  const deleteAutomation = (id: string) => {
-    setActiveAutomations(prev => prev.filter(a => a.id !== id));
-    setAvailableAutomations(prev => prev.filter(a => a.id !== id));
+
+  const deleteAutomation = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this automation? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const supabase = getSupabaseService();
+      await supabase.deleteAutomation(id);
+
+      setActiveAutomations(prev => prev.filter(a => a.id !== id));
+      setAvailableAutomations(prev => prev.filter(a => a.id !== id));
+    } catch (err) {
+      const appError = handleAPIError(err, 'delete-automation');
+      logError(appError, 'DealAutomationPanel delete');
+      setError('Failed to delete automation');
+    } finally {
+      setSaving(false);
+    }
   };
   
   const getStepIcon = (type: string) => {
@@ -295,17 +272,19 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
     }
   };
   
-  const handleGenerateAutomation = () => {
-    setAiGenerating(true);
-    
-    // Simulate AI generating an automation
-    setTimeout(() => {
-      const newAutomation: Automation = {
-        id: Date.now().toString(),
+  const handleGenerateAutomation = async () => {
+    try {
+      setAiGenerating(true);
+
+      const supabase = getSupabaseService();
+
+      // Create AI-generated automation
+      const newAutomation = await supabase.createAutomation({
         name: `${deal.title} Closing Sequence`,
         description: 'AI-generated sequence to move this deal to closed-won stage',
         type: 'ai',
         status: 'draft',
+        dealId: deal.id,
         steps: [
           {
             id: `s${Date.now()}-1`,
@@ -342,15 +321,18 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
             details: 'Send final contract for review and signature',
             status: 'pending'
           }
-        ],
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
+        ]
+      });
+
       setAvailableAutomations(prev => [...prev, newAutomation]);
-      setAiGenerating(false);
       setShowAIBuilder(false);
-    }, 3000);
+    } catch (err) {
+      const appError = handleAPIError(err, 'generate-automation');
+      logError(appError, 'DealAutomationPanel AI generation');
+      setError('Failed to generate automation');
+    } finally {
+      setAiGenerating(false);
+    }
   };
 
   return (
@@ -494,14 +476,41 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
         )}
       </div>
       
-      {/* Active Automations */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-base font-medium text-gray-900">Active Automations</h4>
-          <span className="text-sm text-gray-500">{activeAutomations.length} active</span>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-gray-600">Loading automations...</span>
         </div>
-        
-        {activeAutomations.length === 0 ? (
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+            <span className="text-red-800 font-medium">Error</span>
+          </div>
+          <p className="text-red-700 mt-1">{error}</p>
+          <button
+            onClick={loadAutomations}
+            className="mt-2 px-3 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors text-sm"
+          >
+            <RefreshCw className="w-4 h-4 inline mr-1" />
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Active Automations */}
+      {!loading && !error && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-base font-medium text-gray-900">Active Automations</h4>
+            <span className="text-sm text-gray-500">{activeAutomations.length} active</span>
+          </div>
+
+          {activeAutomations.length === 0 ? (
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 text-center">
             <Zap className="h-10 w-10 text-gray-400 mx-auto mb-3" />
             <h5 className="text-lg font-medium text-gray-700 mb-2">No Active Automations</h5>
@@ -699,9 +708,11 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
             ))}
           </div>
         )}
-      </div>
-      
+        </div>
+      )}
+
       {/* Available Automations */}
+      {!loading && !error && (
       <div>
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-base font-medium text-gray-900">Recommended Automations</h4>
@@ -786,8 +797,9 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
             ))}
           </div>
         )}
-      </div>
-      
+        </div>
+      )}
+
       {/* Create New Automation Modal */}
       {isCreatingNew && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
