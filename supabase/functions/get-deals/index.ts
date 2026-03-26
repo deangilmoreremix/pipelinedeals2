@@ -12,20 +12,31 @@ serve(async (req) => {
   }
 
   try {
+    // Create Supabase client with auth context
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
         },
       }
     );
 
+    // Get current user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
     const { data, error } = await supabaseClient
       .from('deals')
       .select('*')
+      .eq('user_id', user.id)
       .order('updated_at', { ascending: false });
 
     if (error) throw error;

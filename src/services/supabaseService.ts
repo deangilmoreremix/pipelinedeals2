@@ -1,9 +1,10 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { Contact } from '../types';
 import { Deal } from '../types';
 
 interface Automation {
   id: string;
+  userId: string;
   name: string;
   description: string;
   type: 'drip' | 'event' | 'date' | 'ai';
@@ -27,6 +28,7 @@ interface Automation {
 
 interface Task {
   id: string;
+  userId: string;
   title: string;
   description?: string;
   dueDate?: Date;
@@ -40,6 +42,7 @@ interface Task {
 
 interface Communication {
   id: string;
+  userId: string;
   type: 'email' | 'call' | 'meeting' | 'note';
   subject?: string;
   content: string;
@@ -50,17 +53,44 @@ interface Communication {
   createdBy: string;
 }
 
+interface UserPreferences {
+  id: string;
+  userId: string;
+  theme: 'light' | 'dark' | 'system';
+  timezone: string;
+  dateFormat: string;
+  currency: string;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface UserStorage {
+  id: string;
+  userId: string;
+  fileName: string;
+  filePath: string;
+  fileType?: string;
+  fileSize?: number;
+  bucketId: string;
+  entityType?: string;
+  entityId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface Database {
   public: {
     Tables: {
       contacts: {
-        Row: Contact;
-        Insert: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>;
+        Row: Contact & { user_id: string };
+        Insert: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'> & { user_id?: string };
         Update: Partial<Omit<Contact, 'id' | 'createdAt'>>;
       };
       deals: {
-        Row: Deal;
-        Insert: Omit<Deal, 'id' | 'createdAt' | 'updatedAt'>;
+        Row: Deal & { user_id: string };
+        Insert: Omit<Deal, 'id' | 'createdAt' | 'updatedAt'> & { user_id?: string };
         Update: Partial<Omit<Deal, 'id' | 'createdAt'>>;
       };
       automations: {
@@ -81,16 +111,26 @@ interface Database {
       activities: {
         Row: {
           id: string;
+          user_id: string;
           type: string;
           entity_type: 'contact' | 'deal' | 'automation' | 'task';
           entity_id: string;
           description: string;
           metadata: any;
           created_at: string;
-          user_id: string;
         };
         Insert: Omit<Database['public']['Tables']['activities']['Row'], 'id' | 'created_at'>;
         Update: Partial<Database['public']['Tables']['activities']['Row']>;
+      };
+      user_preferences: {
+        Row: UserPreferences;
+        Insert: Omit<UserPreferences, 'id' | 'createdAt' | 'updatedAt'>;
+        Update: Partial<Omit<UserPreferences, 'id' | 'createdAt'>>;
+      };
+      user_storage: {
+        Row: UserStorage;
+        Insert: Omit<UserStorage, 'id' | 'createdAt' | 'updatedAt'>;
+        Update: Partial<Omit<UserStorage, 'id' | 'createdAt'>>;
       };
     };
   };
@@ -110,7 +150,42 @@ class SupabaseService {
     this.supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
   }
 
-  // Contact methods
+  // ==================== AUTHENTICATION ====================
+
+  async getCurrentUser(): Promise<User | null> {
+    const { data: { user } } = await this.supabase.auth.getUser();
+    return user;
+  }
+
+  async signUp(email: string, password: string) {
+    const { data, error } = await this.supabase.auth.signUp({
+      email,
+      password,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  async signIn(email: string, password: string) {
+    const { data, error } = await this.supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  async signOut() {
+    const { error } = await this.supabase.auth.signOut();
+    if (error) throw error;
+  }
+
+  onAuthStateChange(callback: (event: string, session: any) => void) {
+    return this.supabase.auth.onAuthStateChange(callback);
+  }
+
+  // ==================== CONTACTS ====================
+
   async getContacts(): Promise<Contact[]> {
     const { data, error } = await this.supabase
       .from('contacts')
@@ -152,6 +227,20 @@ class SupabaseService {
   }
 
   async deleteContact(id: string): Promise<void> {
+    // Delete associated avatar from storage if exists
+    const { data: contact } = await this.supabase
+      .from('contacts')
+      .select('avatar_url')
+      .eq('id', id)
+      .single();
+
+    if (contact?.avatar_url) {
+      const path = contact.avatar_url.split('/').pop();
+      if (path) {
+        await this.deleteFile('avatars', path);
+      }
+    }
+
     const { error } = await this.supabase
       .from('contacts')
       .delete()
@@ -171,7 +260,8 @@ class SupabaseService {
     return data || [];
   }
 
-  // Deal methods
+  // ==================== DEALS ====================
+
   async getDeals(): Promise<Deal[]> {
     const { data, error } = await this.supabase
       .from('deals')
@@ -221,7 +311,8 @@ class SupabaseService {
     if (error) throw error;
   }
 
-  // Automation methods
+  // ==================== AUTOMATIONS ====================
+
   async getAutomations(dealId?: string): Promise<Automation[]> {
     let query = this.supabase
       .from('automations')
@@ -237,7 +328,7 @@ class SupabaseService {
     return data || [];
   }
 
-  async createAutomation(automation: Omit<Automation, 'id' | 'createdAt' | 'updatedAt'>): Promise<Automation> {
+  async createAutomation(automation: Omit<Automation, 'id' | 'createdAt' | 'updatedAt' | 'userId'>): Promise<Automation> {
     const { data, error } = await this.supabase
       .from('automations')
       .insert({
@@ -276,7 +367,8 @@ class SupabaseService {
     if (error) throw error;
   }
 
-  // Task methods
+  // ==================== TASKS ====================
+
   async getTasks(dealId?: string): Promise<Task[]> {
     let query = this.supabase
       .from('tasks')
@@ -292,7 +384,7 @@ class SupabaseService {
     return data || [];
   }
 
-  async createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task> {
+  async createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId'>): Promise<Task> {
     const { data, error } = await this.supabase
       .from('tasks')
       .insert({
@@ -331,7 +423,8 @@ class SupabaseService {
     if (error) throw error;
   }
 
-  // Communication methods
+  // ==================== COMMUNICATIONS ====================
+
   async getCommunications(dealId?: string): Promise<Communication[]> {
     let query = this.supabase
       .from('communications')
@@ -347,7 +440,7 @@ class SupabaseService {
     return data || [];
   }
 
-  async createCommunication(communication: Omit<Communication, 'id' | 'createdAt'>): Promise<Communication> {
+  async createCommunication(communication: Omit<Communication, 'id' | 'createdAt' | 'userId'>): Promise<Communication> {
     const { data, error } = await this.supabase
       .from('communications')
       .insert({
@@ -361,14 +454,14 @@ class SupabaseService {
     return data;
   }
 
-  // Activity tracking
+  // ==================== ACTIVITIES ====================
+
   async logActivity(activity: {
     type: string;
     entity_type: 'contact' | 'deal';
     entity_id: string;
     description: string;
     metadata?: any;
-    user_id: string;
   }): Promise<void> {
     const { error } = await this.supabase
       .from('activities')
@@ -389,7 +482,109 @@ class SupabaseService {
     return data || [];
   }
 
-  // Real-time subscriptions
+  // ==================== USER PREFERENCES ====================
+
+  async getUserPreferences(): Promise<UserPreferences | null> {
+    const { data, error } = await this.supabase
+      .from('user_preferences')
+      .select('*')
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  }
+
+  async createUserPreferences(preferences: Omit<UserPreferences, 'id' | 'createdAt' | 'updatedAt' | 'userId'>): Promise<UserPreferences> {
+    const { data, error } = await this.supabase
+      .from('user_preferences')
+      .insert({
+        ...preferences,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateUserPreferences(updates: Partial<UserPreferences>): Promise<UserPreferences> {
+    const { data, error } = await this.supabase
+      .from('user_preferences')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  // ==================== FILE STORAGE ====================
+
+  async uploadFile(bucket: 'avatars' | 'documents' | 'attachments' | 'exports', filePath: string, file: File): Promise<string> {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const fullPath = `${user.id}/${filePath}`;
+    const { error } = await this.supabase.storage
+      .from(bucket)
+      .upload(fullPath, file, {
+        upsert: true,
+      });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = this.supabase.storage
+      .from(bucket)
+      .getPublicUrl(fullPath);
+
+    return publicUrl;
+  }
+
+  async deleteFile(bucket: 'avatars' | 'documents' | 'attachments' | 'exports', filePath: string): Promise<void> {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const fullPath = filePath.startsWith(user.id) ? filePath : `${user.id}/${filePath}`;
+    const { error } = await this.supabase.storage
+      .from(bucket)
+      .remove([fullPath]);
+
+    if (error) throw error;
+  }
+
+  async listFiles(bucket: 'avatars' | 'documents' | 'attachments' | 'exports', path?: string): Promise<any[]> {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const prefix = path ? `${user.id}/${path}` : user.id;
+    const { data, error } = await this.supabase.storage
+      .from(bucket)
+      .list(prefix);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async downloadFile(bucket: 'avatars' | 'documents' | 'attachments' | 'exports', filePath: string): Promise<Blob> {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const fullPath = filePath.startsWith(user.id) ? filePath : `${user.id}/${filePath}`;
+    const { data, error } = await this.supabase.storage
+      .from(bucket)
+      .download(fullPath);
+
+    if (error) throw error;
+    return data;
+  }
+
+  // ==================== REAL-TIME SUBSCRIPTIONS ====================
+
   subscribeToContacts(callback: (payload: any) => void) {
     return this.supabase
       .channel('contacts')
@@ -439,17 +634,6 @@ class SupabaseService {
       }, callback)
       .subscribe();
   }
-
-  // Authentication helpers
-  async getCurrentUser() {
-    const { data: { user } } = await this.supabase.auth.getUser();
-    return user;
-  }
-
-  async signOut() {
-    const { error } = await this.supabase.auth.signOut();
-    if (error) throw error;
-  }
 }
 
 // Singleton instance
@@ -463,3 +647,4 @@ export const getSupabaseService = (): SupabaseService => {
 };
 
 export { SupabaseService };
+export type { Automation, Task, Communication, UserPreferences, UserStorage };

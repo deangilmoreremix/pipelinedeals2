@@ -12,23 +12,34 @@ serve(async (req) => {
   }
 
   try {
+    // Create Supabase client with auth context
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
         },
       }
     );
 
-    const { contact, ...contactData } = await req.json();
+    // Get current user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
+      });
+    }
+
+    const contactData = await req.json();
 
     const { data, error } = await supabaseClient
       .from('contacts')
       .insert({
         ...contactData,
+        user_id: user.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -39,11 +50,11 @@ serve(async (req) => {
 
     // Log activity
     await supabaseClient.from('activities').insert({
+      user_id: user.id,
       type: 'contact_created',
       entity_type: 'contact',
       entity_id: data.id,
       description: `Contact ${data.name} was created`,
-      user_id: 'system',
     });
 
     return new Response(JSON.stringify({ data }), {
