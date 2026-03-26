@@ -1,35 +1,12 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- Enable Row Level Security on all tables
-ALTER TABLE IF EXISTS contacts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS deals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS automations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS communications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS activities ENABLE ROW LEVEL SECURITY;
-
--- Drop existing policies if they exist
+-- Drop existing policies
 DROP POLICY IF EXISTS "Allow public access to contacts" ON contacts;
 DROP POLICY IF EXISTS "Allow public access to deals" ON deals;
 DROP POLICY IF EXISTS "Allow public access to automations" ON automations;
 DROP POLICY IF EXISTS "Allow public access to tasks" ON tasks;
 DROP POLICY IF EXISTS "Allow public access to communications" ON communications;
 DROP POLICY IF EXISTS "Allow public access to activities" ON activities;
-DROP POLICY IF EXISTS "Users can only access their own contacts" ON contacts;
-DROP POLICY IF EXISTS "Users can only access their own deals" ON deals;
-DROP POLICY IF EXISTS "Users can only access their own automations" ON automations;
-DROP POLICY IF EXISTS "Users can only access their own tasks" ON tasks;
-DROP POLICY IF EXISTS "Users can only access their own communications" ON communications;
-DROP POLICY IF EXISTS "Users can only access their own activities" ON activities;
 
--- Drop existing triggers if they exist
-DROP TRIGGER IF EXISTS update_contacts_updated_at ON contacts;
-DROP TRIGGER IF EXISTS update_deals_updated_at ON deals;
-DROP TRIGGER IF EXISTS update_automations_updated_at ON automations;
-DROP TRIGGER IF EXISTS update_tasks_updated_at ON tasks;
-DROP TRIGGER IF EXISTS update_user_preferences_updated_at ON user_preferences;
-DROP TRIGGER IF EXISTS update_user_storage_updated_at ON user_storage;
+-- Drop existing triggers
 DROP TRIGGER IF EXISTS set_contacts_user_id ON contacts;
 DROP TRIGGER IF EXISTS set_deals_user_id ON deals;
 DROP TRIGGER IF EXISTS set_automations_user_id ON automations;
@@ -37,18 +14,26 @@ DROP TRIGGER IF EXISTS set_tasks_user_id ON tasks;
 DROP TRIGGER IF EXISTS set_communications_user_id ON communications;
 DROP TRIGGER IF EXISTS set_activities_user_id ON activities;
 
--- Add user_id column to existing tables (if not exists)
-ALTER TABLE contacts ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
-ALTER TABLE deals ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
-ALTER TABLE automations ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
-ALTER TABLE tasks ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
-ALTER TABLE communications ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
-ALTER TABLE activities ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+-- Drop columns if they exist (to recreate with correct type)
+ALTER TABLE contacts DROP COLUMN IF EXISTS user_id;
+ALTER TABLE deals DROP COLUMN IF EXISTS user_id;
+ALTER TABLE automations DROP COLUMN IF EXISTS user_id;
+ALTER TABLE tasks DROP COLUMN IF EXISTS user_id;
+ALTER TABLE communications DROP COLUMN IF EXISTS user_id;
+ALTER TABLE activities DROP COLUMN IF EXISTS user_id;
 
--- Add avatar_url to contacts if not exists
+-- Add user_id columns with correct UUID type
+ALTER TABLE contacts ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE deals ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE automations ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE tasks ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE communications ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE activities ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+
+-- Add avatar_url to contacts
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
--- User preferences table
+-- Create user preferences table
 CREATE TABLE IF NOT EXISTS user_preferences (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -63,7 +48,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     UNIQUE(user_id)
 );
 
--- User storage metadata table
+-- Create user storage table
 CREATE TABLE IF NOT EXISTS user_storage (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -78,114 +63,45 @@ CREATE TABLE IF NOT EXISTS user_storage (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create indexes for better performance
+-- Create new indexes
 CREATE INDEX IF NOT EXISTS idx_contacts_user_id ON contacts(user_id);
-CREATE INDEX IF NOT EXISTS idx_contacts_email ON contacts(email);
-CREATE INDEX IF NOT EXISTS idx_contacts_company ON contacts(company);
-CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts(status);
-
 CREATE INDEX IF NOT EXISTS idx_deals_user_id ON deals(user_id);
-CREATE INDEX IF NOT EXISTS idx_deals_stage ON deals(stage);
-CREATE INDEX IF NOT EXISTS idx_deals_contact_id ON deals(contact_id);
-
 CREATE INDEX IF NOT EXISTS idx_automations_user_id ON automations(user_id);
-CREATE INDEX IF NOT EXISTS idx_automations_deal_id ON automations(deal_id);
-
 CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_deal_id ON tasks(deal_id);
-
 CREATE INDEX IF NOT EXISTS idx_communications_user_id ON communications(user_id);
-CREATE INDEX IF NOT EXISTS idx_communications_deal_id ON communications(deal_id);
-
 CREATE INDEX IF NOT EXISTS idx_activities_user_id ON activities(user_id);
-CREATE INDEX IF NOT EXISTS idx_activities_entity ON activities(entity_type, entity_id);
-CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities(created_at DESC);
-
 CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON user_preferences(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_storage_user_id ON user_storage(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_storage_entity ON user_storage(entity_type, entity_id);
 
--- Row Level Security Policies - Users can only access their own data
-
--- Contacts: Users can only CRUD their own contacts
+-- Create user-specific RLS policies
 CREATE POLICY "Users can only access their own contacts"
-  ON contacts FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  ON contacts FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- Deals: Users can only CRUD their own deals
 CREATE POLICY "Users can only access their own deals"
-  ON deals FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  ON deals FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- Automations: Users can only CRUD their own automations
 CREATE POLICY "Users can only access their own automations"
-  ON automations FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  ON automations FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- Tasks: Users can only CRUD their own tasks
 CREATE POLICY "Users can only access their own tasks"
-  ON tasks FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  ON tasks FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- Communications: Users can only CRUD their own communications
 CREATE POLICY "Users can only access their own communications"
-  ON communications FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  ON communications FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- Activities: Users can only CRUD their own activities
 CREATE POLICY "Users can only access their own activities"
-  ON activities FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  ON activities FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- User Preferences: Users can only access their own preferences
+-- Enable RLS on new tables
 ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can only access their own preferences"
-  ON user_preferences FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  ON user_preferences FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- User Storage: Users can only access their own storage records
 ALTER TABLE user_storage ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can only access their own storage records"
-  ON user_storage FOR ALL
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can only access their own storage"
+  ON user_storage FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- Create function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Create triggers for updated_at
-CREATE TRIGGER update_contacts_updated_at BEFORE UPDATE ON contacts
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_deals_updated_at BEFORE UPDATE ON deals
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_automations_updated_at BEFORE UPDATE ON automations
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON tasks
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferences
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_user_storage_updated_at BEFORE UPDATE ON user_storage
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Function to automatically set user_id on insert
+-- Create function to auto-set user_id
 CREATE OR REPLACE FUNCTION set_user_id()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -194,21 +110,16 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Triggers to automatically set user_id
+-- Create triggers to auto-set user_id
 CREATE TRIGGER set_contacts_user_id BEFORE INSERT ON contacts
     FOR EACH ROW EXECUTE FUNCTION set_user_id();
-
 CREATE TRIGGER set_deals_user_id BEFORE INSERT ON deals
     FOR EACH ROW EXECUTE FUNCTION set_user_id();
-
 CREATE TRIGGER set_automations_user_id BEFORE INSERT ON automations
     FOR EACH ROW EXECUTE FUNCTION set_user_id();
-
 CREATE TRIGGER set_tasks_user_id BEFORE INSERT ON tasks
     FOR EACH ROW EXECUTE FUNCTION set_user_id();
-
 CREATE TRIGGER set_communications_user_id BEFORE INSERT ON communications
     FOR EACH ROW EXECUTE FUNCTION set_user_id();
-
 CREATE TRIGGER set_activities_user_id BEFORE INSERT ON activities
     FOR EACH ROW EXECUTE FUNCTION set_user_id();
