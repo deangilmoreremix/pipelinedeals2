@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useEffect, memo, useMemo } from 'react';
 import { Deal } from '../types';
 import { CustomizableAIToolbar } from './ui/CustomizableAIToolbar';
 import { 
@@ -49,11 +49,11 @@ interface AIEnhancedDealCardProps {
   onFindNewImage?: (deal: Deal) => Promise<void>;
 }
 
-const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({ 
-  deal, 
+const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
+  deal,
   isSelected = false,
   onSelect,
-  onClick, 
+  onClick,
   showAnalyzeButton = true,
   onAnalyze,
   onAIEnrich,
@@ -61,30 +61,58 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
   onToggleFavorite,
   onFindNewImage
 }) => {
+  // Memoize computed values
+  const isOverdue = useMemo(() => {
+    return deal.dueDate && new Date() > deal.dueDate;
+  }, [deal.dueDate]);
+
+  const isDueSoon = useMemo(() => {
+    return deal.dueDate && !isOverdue &&
+      (deal.dueDate.getTime() - new Date().getTime()) < (7 * 24 * 60 * 60 * 1000);
+  }, [deal.dueDate, isOverdue]);
+
+  const socialProfiles = useMemo(() => {
+    return deal.socialProfiles || {
+      linkedin: deal.company ? `https://linkedin.com/company/${deal.company.toLowerCase().replace(/\s+/g, '-')}` : undefined,
+      website: deal.company ? `https://${deal.company.toLowerCase().replace(/\s+/g, '')}.com` : undefined
+    };
+  }, [deal.socialProfiles, deal.company]);
+
+  const customFields = useMemo(() => {
+    return deal.customFields || {
+      "Deal Source": deal.tags?.[0] || "Direct",
+      "Account Manager": "Alex Rivera"
+    };
+  }, [deal.customFields, deal.tags]);
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [localAnalyzing, setLocalAnalyzing] = useState(false);
   const [localEnriching, setLocalEnriching] = useState(false);
   const [isFinding, setIsFinding] = useState(false);
   const [showCustomFields, setShowCustomFields] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const isMountedRef = useRef(true);
 
   // New state to track AI enrichment status
   const [lastEnrichment, setLastEnrichment] = useState<any>(
     deal.lastEnrichment || (deal.probability > 75 ? { confidence: deal.probability } : null)
   );
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const formatCurrency = useCallback((value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(value);
-  };
-
-  const isOverdue = deal.dueDate && new Date() > deal.dueDate;
-  const isDueSoon = deal.dueDate && !isOverdue && 
-    (deal.dueDate.getTime() - new Date().getTime()) < (7 * 24 * 60 * 60 * 1000);
+  }, []);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -140,80 +168,80 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
     onClick();
   };
 
-  const handleAnalyzeClick = async (e: React.MouseEvent) => {
+  const handleAnalyzeClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!onAnalyze || isAnalyzing || localAnalyzing) return;
-    
+
     setLocalAnalyzing(true);
     try {
       await onAnalyze(deal);
-      setLastEnrichment({ 
-        confidence: Math.max(deal.probability, 75),
-        aiProvider: 'Hybrid AI (GPT-4o + Gemini)',
-        timestamp: new Date()
-      });
+      if (isMountedRef.current) {
+        setLastEnrichment({
+          confidence: Math.max(deal.probability, 75),
+          aiProvider: 'Hybrid AI (GPT-4o + Gemini)',
+          timestamp: new Date()
+        });
+      }
     } catch (error) {
       console.error('Analysis failed:', error);
     } finally {
-      setLocalAnalyzing(false);
+      if (isMountedRef.current) {
+        setLocalAnalyzing(false);
+      }
     }
-  };
+  }, [onAnalyze, isAnalyzing, localAnalyzing, deal]);
 
-  const handleAIEnrichClick = async (e: React.MouseEvent) => {
+  const handleAIEnrichClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!onAIEnrich || localEnriching) return;
-    
+
     setLocalEnriching(true);
     try {
       await onAIEnrich(deal);
-      setLastEnrichment({ 
-        confidence: Math.min(deal.probability + 10, 95),
-        aiProvider: 'OpenAI GPT-4o',
-        timestamp: new Date()
-      });
+      if (isMountedRef.current) {
+        setLastEnrichment({
+          confidence: Math.min(deal.probability + 10, 95),
+          aiProvider: 'OpenAI GPT-4o',
+          timestamp: new Date()
+        });
+      }
     } catch (error) {
       console.error('Enrichment failed:', error);
     } finally {
-      setLocalEnriching(false);
+      if (isMountedRef.current) {
+        setLocalEnriching(false);
+      }
     }
-  };
+  }, [onAIEnrich, localEnriching, deal]);
 
-  const handleFavoriteClick = async (e: React.MouseEvent) => {
+  const handleFavoriteClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!onToggleFavorite) return;
-    
+
     try {
       await onToggleFavorite(deal);
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
     }
-  };
+  }, [onToggleFavorite, deal]);
 
-  const handleFindImageClick = async (e: React.MouseEvent) => {
+  const handleFindImageClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!onFindNewImage || isFinding) return;
-    
+
     setIsFinding(true);
     try {
       await onFindNewImage(deal);
     } catch (error) {
       console.error('Failed to find new image:', error);
     } finally {
-      setIsFinding(false);
+      if (isMountedRef.current) {
+        setIsFinding(false);
+      }
     }
-  };
+  }, [onFindNewImage, isFinding, deal]);
 
-  // Get social profiles (mock data if not provided)
-  const socialProfiles = deal.socialProfiles || {
-    linkedin: deal.company ? `https://linkedin.com/company/${deal.company.toLowerCase().replace(/\s+/g, '-')}` : undefined,
-    website: deal.company ? `https://${deal.company.toLowerCase().replace(/\s+/g, '')}.com` : undefined
-  };
 
-  // Custom fields (mock data if not provided)
-  const customFields = deal.customFields || {
-    "Deal Source": deal.tags?.[0] || "Direct",
-    "Account Manager": "Alex Rivera"
-  };
 
   // Social platform definitions
   const socialPlatforms = [
@@ -226,11 +254,18 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
   const analyzing = isAnalyzing || localAnalyzing;
   const enriching = localEnriching;
 
+  // Memoize derived UI state
+  const scoreColorClass = useMemo(() => getScoreColor(deal.probability), [deal.probability]);
+  const priorityColorClass = useMemo(() => getPriorityColor(deal.priority), [deal.priority]);
+  const stageColorClass = useMemo(() => getStageColor(deal.stage), [deal.stage]);
+
   return (
     <div
       ref={cardRef}
       onClick={handleCardClick}
       className="bg-white dark:bg-gray-900 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group relative border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 overflow-hidden"
+      role="article"
+      aria-label={`Deal card for ${deal.title}`}
     >
       {/* Selection Checkbox */}
       {onSelect && (
@@ -243,69 +278,76 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
               onSelect();
             }}
             className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500 bg-white border-gray-300"
+            aria-label={`Select deal: ${deal.title}`}
           />
         </div>
       )}
 
-      {/* Header Actions */}
-      <div className="absolute top-4 right-4 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-        {/* AI Analysis Button - Prominently Featured */}
-        {onAnalyze && showAnalyzeButton && (
-          <button 
-            onClick={handleAnalyzeClick}
-            disabled={analyzing}
-            className={`p-2 rounded-lg transition-all duration-200 relative ${
-              deal.probability > 70
-                ? 'bg-purple-100 text-purple-600 hover:bg-purple-200' 
-                : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 shadow-lg'
-            }`}
-            title={deal.probability > 70 ? 'Re-analyze with AI' : 'Analyze with AI'}
-          >
-            {analyzing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Brain className="w-4 h-4" />
-            )}
-            {deal.probability < 70 && !analyzing && (
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-            )}
-          </button>
-        )}
-        
-        {/* Favorite Button */}
-        {onToggleFavorite && (
+        {/* Header Actions */}
+        <div className="absolute top-4 right-4 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+          {/* AI Analysis Button - Prominently Featured */}
+          {onAnalyze && showAnalyzeButton && (
+            <button
+              onClick={handleAnalyzeClick}
+              disabled={analyzing}
+              className={`p-2 rounded-lg transition-all duration-200 relative focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                deal.probability > 70
+                  ? 'bg-purple-100 text-purple-600 hover:bg-purple-200'
+                  : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 shadow-lg'
+              }`}
+              aria-label={deal.probability > 70 ? 'Re-analyze deal with AI' : 'Analyze deal with AI'}
+              aria-busy={analyzing}
+              title={deal.probability > 70 ? 'Re-analyze with AI' : 'Analyze with AI'}
+            >
+              {analyzing ? (
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Brain className="w-4 h-4" aria-hidden="true" />
+              )}
+              {deal.probability < 70 && !analyzing && (
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" aria-hidden="true"></div>
+              )}
+            </button>
+          )}
+
+          {/* Favorite Button */}
+          {onToggleFavorite && (
+            <button
+              onClick={handleFavoriteClick}
+              className={`p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 ${
+                deal.isFavorite
+                  ? 'text-red-500 hover:bg-red-50'
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
+              aria-label={deal.isFavorite ? `Remove ${deal.title} from favorites` : `Add ${deal.title} to favorites`}
+              aria-pressed={deal.isFavorite}
+              title={deal.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <Heart className={`w-4 h-4 ${deal.isFavorite ? 'fill-current' : ''}`} aria-hidden="true" />
+            </button>
+          )}
+
           <button
-            onClick={handleFavoriteClick}
-            className={`p-2 rounded-lg transition-colors ${
-              deal.isFavorite 
-                ? 'text-red-500 hover:bg-red-50' 
-                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-            }`}
-            title={deal.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            onClick={(e) => {
+              e.stopPropagation();
+              // Handle edit action
+            }}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+            aria-label={`Edit ${deal.title}`}
           >
-            <Heart className={`w-4 h-4 ${deal.isFavorite ? 'fill-current' : ''}`} />
+            <Edit className="w-3 h-3" aria-hidden="true" />
           </button>
-        )}
-        
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            // Handle edit action
-          }}
-          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <Edit className="w-3 h-3" />
-        </button>
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            // Handle more actions
-          }}
-          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <MoreHorizontal className="w-3 h-3" />
-        </button>
-      </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              // Handle more actions
+            }}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+            aria-label={`More actions for ${deal.title}`}
+          >
+            <MoreHorizontal className="w-3 h-3" aria-hidden="true" />
+          </button>
+        </div>
 
       <div className="p-6">
         {/* Company and Person Avatars with Deal Info */}
@@ -375,22 +417,22 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
           </div>
           
           {/* Deal Score Display */}
-          <div className="flex flex-col items-center space-y-2">
-            <div className={`h-12 w-12 rounded-full ${getScoreColor(deal.probability)} text-white flex items-center justify-center font-bold text-lg shadow-lg ring-2 ring-white relative`}>
+          <div className="flex flex-col items-center space-y-2" aria-label={`Deal probability: ${deal.probability}%`}>
+            <div className={`h-12 w-12 rounded-full ${getScoreColor(deal.probability)} text-white flex items-center justify-center font-bold text-lg shadow-lg ring-2 ring-white relative`} aria-hidden="true">
               {deal.probability}%
-              
+
               {/* Analysis Loading Indicator */}
               {analyzing && (
                 <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center">
                   <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 </div>
               )}
-              
+
               {/* AI Enhanced Indicator */}
               {deal.probability > 70 && (
                 <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-yellow-300" />
               )}
-              
+
               {/* Favorite Badge */}
               {deal.isFavorite && (
                 <div className="absolute -top-1 -left-1 h-4 w-4 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg ring-1 ring-white">
@@ -706,4 +748,19 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
   );
 }
 
-export default AIEnhancedDealCard;
+// Memoize the component to prevent unnecessary re-renders
+const MemoizedAIEnhancedDealCard = memo(AIEnhancedDealCard, (prevProps, nextProps) => {
+  // Custom comparison for deep equality on deal object
+  return (
+    prevProps.deal.id === nextProps.deal.id &&
+    prevProps.deal.probability === nextProps.deal.probability &&
+    prevProps.deal.stage === nextProps.deal.stage &&
+    prevProps.deal.value === nextProps.deal.value &&
+    prevProps.deal.isFavorite === nextProps.deal.isFavorite &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isAnalyzing === nextProps.isAnalyzing
+  );
+});
+
+export default MemoizedAIEnhancedDealCard;
+export { AIEnhancedDealCard };

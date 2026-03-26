@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Deal } from '../../types';
 import { Contact } from '../../types/contact';
 import { 
@@ -53,6 +53,9 @@ export const DealCommunicationHub: React.FC<DealCommunicationHubProps> = ({ deal
   const [callDuration, setCallDuration] = useState(0);
   const [isSending, setIsSending] = useState(false);
   const [showEmailOptions, setShowEmailOptions] = useState(false);
+  const isMountedRef = useRef(true);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRefs = useRef<Set<NodeJS.Timeout>>(new Set());
 
   // Sample messages for demo
   const [messages, setMessages] = useState<Message[]>([
@@ -132,13 +135,32 @@ export const DealCommunicationHub: React.FC<DealCommunicationHubProps> = ({ deal
     }
   ];
 
-  const handleSendMessage = () => {
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    return () => {
+      isMountedRef.current = false;
+      // Clear all intervals and timeouts
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      timeoutRefs.current.forEach(timeout => clearTimeout(timeout));
+      timeoutRefs.current.clear();
+    };
+  }, []);
+
+  const handleSendMessage = useCallback(() => {
     if (!newMessage.trim()) return;
 
     setIsSending(true);
     
-    // Simulate sending delay
-    setTimeout(() => {
+    // Simulate sending delay with cleanup tracking
+    const timeoutId = setTimeout(() => {
+      timeoutRefs.current.delete(timeoutId);
+      if (!isMountedRef.current) return;
+      
       const newMsg: Message = {
         id: Date.now().toString(),
         content: newMessage,
@@ -148,17 +170,21 @@ export const DealCommunicationHub: React.FC<DealCommunicationHubProps> = ({ deal
         type: 'email'
       };
       
-      setMessages([...messages, newMsg]);
+      setMessages(prev => [...prev, newMsg]);
       setNewMessage('');
       setIsSending(false);
     }, 500);
-  };
+    
+    timeoutRefs.current.add(timeoutId);
+  }, [newMessage]);
 
-  const handleGenerateEmail = async () => {
+  const handleGenerateEmail = useCallback(async () => {
     setIsGenerating(true);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Simulate API call delay with cleanup tracking
+    const timeoutId = setTimeout(() => {
+      timeoutRefs.current.delete(timeoutId);
+      if (!isMountedRef.current) return;
     
     const template = `Subject: Follow-up regarding ${deal.title} - Next steps
 
@@ -181,39 +207,55 @@ Best regards,
 
 P.S. I've also attached a case study from a client in a similar situation who achieved [specific result] within [timeframe].`;
 
-    setGeneratedEmail(template);
-    setIsGenerating(false);
-  };
+      if (isMountedRef.current) {
+        setGeneratedEmail(template);
+        setIsGenerating(false);
+      }
+    }, 2000);
+    
+    timeoutRefs.current.add(timeoutId);
+  }, [deal, contact]);
   
-  const handleStartCall = () => {
+  const handleStartCall = useCallback(() => {
     setCallStatus('connecting');
-    setTimeout(() => setCallStatus('active'), 1500);
+    
+    const connectTimeout = setTimeout(() => {
+      timeoutRefs.current.delete(connectTimeout);
+      if (!isMountedRef.current) return;
+      setCallStatus('active');
+    }, 1500);
+    timeoutRefs.current.add(connectTimeout);
     
     // Start timer for call duration
-    const timer = setInterval(() => {
+    intervalRef.current = setInterval(() => {
+      if (!isMountedRef.current) return;
       setCallDuration(prev => prev + 1);
     }, 1000);
-    
-    // Cleanup function
-    return () => clearInterval(timer);
-  };
+  }, []);
   
-  const handleEndCall = () => {
+  const handleEndCall = useCallback(() => {
     setCallStatus('ended');
-    setCallDuration(0);
+    
+    // Clear the interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
     
     // Add call to history
+    const durationStr = `${Math.floor(callDuration / 60)}:${(callDuration % 60).toString().padStart(2, '0')}`;
     const newMsg: Message = {
       id: Date.now().toString(),
-      content: `Call with ${deal.contact} ended. Duration: ${Math.floor(callDuration / 60)}:${(callDuration % 60).toString().padStart(2, '0')}`,
+      content: `Call with ${deal.contact} ended. Duration: ${durationStr}`,
       sender: 'user',
       timestamp: new Date(),
       status: 'sent',
       type: 'call'
     };
     
-    setMessages([...messages, newMsg]);
-  };
+    setMessages(prev => [...prev, newMsg]);
+    setCallDuration(0);
+  }, [callDuration, deal.contact]);
   
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { 

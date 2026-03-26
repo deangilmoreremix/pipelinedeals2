@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Deal } from '../../types';
 import { getSupabaseService } from '../../services/supabaseService';
 import { logError, handleAPIError } from '../../utils/errorHandling';
@@ -89,27 +89,40 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [realTimeSubscription, setRealTimeSubscription] = useState<any>(null);
+  const realTimeSubscriptionRef = useRef<any>(null);
+  const timeoutRefs = useRef<Set<NodeJS.Timeout>>(new Set());
+  const isMountedRef = useRef(true);
 
   // Load automations on component mount
   useEffect(() => {
+    isMountedRef.current = true;
     loadAutomations();
     setupRealTimeUpdates();
 
     return () => {
-      if (realTimeSubscription) {
-        realTimeSubscription.unsubscribe();
+      isMountedRef.current = false;
+      // Cleanup all timeouts
+      timeoutRefs.current.forEach(timeout => clearTimeout(timeout));
+      timeoutRefs.current.clear();
+      // Cleanup subscription
+      if (realTimeSubscriptionRef.current) {
+        realTimeSubscriptionRef.current.unsubscribe();
+        realTimeSubscriptionRef.current = null;
       }
     };
   }, [deal.id]);
 
-  const loadAutomations = async () => {
+  const loadAutomations = useCallback(async () => {
+    if (!isMountedRef.current) return;
+    
     try {
       setLoading(true);
       setError(null);
 
       const supabase = getSupabaseService();
       const automations = await supabase.getAutomations(deal.id);
+
+      if (!isMountedRef.current) return;
 
       // Separate active and available automations
       const active = automations.filter(a => a.status === 'active' || a.status === 'paused');
@@ -118,28 +131,32 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
       setActiveAutomations(active);
       setAvailableAutomations(available);
     } catch (err) {
+      if (!isMountedRef.current) return;
       const appError = handleAPIError(err, 'load-automations');
       logError(appError, 'DealAutomationPanel load');
       setError('Failed to load automations');
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [deal.id]);
 
-  const setupRealTimeUpdates = () => {
+  const setupRealTimeUpdates = useCallback(() => {
     try {
       const supabase = getSupabaseService();
       const subscription = supabase.subscribeToAutomations(deal.id, (payload) => {
+        if (!isMountedRef.current) return;
         console.log('Real-time automation update:', payload);
         // Reload automations when changes occur
         loadAutomations();
       });
 
-      setRealTimeSubscription(subscription);
+      realTimeSubscriptionRef.current = subscription;
     } catch (err) {
       console.error('Failed to setup real-time updates:', err);
     }
-  };
+  }, [deal.id, loadAutomations]);
   
   const [expandedAutomations, setExpandedAutomations] = useState<string[]>(['1']);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -1378,10 +1395,15 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
     const step = automation.steps[stepIndex];
     const delayMs = (step.delayDays || 1) * 24 * 60 * 60 * 1000; // Convert days to milliseconds
 
-    // Schedule next step execution
-    setTimeout(() => {
-      executeAutomationStep(automationId, stepIndex + 1);
+    // Schedule next step execution with cleanup tracking
+    const timeoutId = setTimeout(() => {
+      timeoutRefs.current.delete(timeoutId);
+      if (isMountedRef.current) {
+        executeAutomationStep(automationId, stepIndex + 1);
+      }
     }, delayMs);
+    
+    timeoutRefs.current.add(timeoutId);
   };
 
   const updateStepStatus = async (automationId: string, stepIndex: number, status: string) => {

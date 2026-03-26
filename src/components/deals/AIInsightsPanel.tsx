@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Deal } from '../../types';
 import {
   Brain,
@@ -55,13 +55,20 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({ deal }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'all' | 'action' | 'opportunity' | 'risk'>('all');
   const [aiProvider, setAiProvider] = useState<string>(aiModels[Math.floor(Math.random() * aiModels.length)]);
+  const isMountedRef = useRef(true);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    
     // Generate insights based on deal data
     const generateInsights = async () => {
       setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
       
+      // Use ref for cleanup tracking instead of promise
+      timeoutRef.current = setTimeout(() => {
+        if (!isMountedRef.current) return;
+        
       const generatedInsights: Insight[] = [];
       
       // Add insights based on deal data
@@ -219,19 +226,34 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({ deal }) => {
         });
       }
       
-      setInsights(generatedInsights);
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setInsights(generatedInsights);
+        setIsLoading(false);
+      }
     };
     
     generateInsights();
+    
+    return () => {
+      isMountedRef.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, [deal, aiProvider]);
   
-  const handleRefreshInsights = async () => {
+  const handleRefreshInsights = useCallback(async () => {
     setIsRefreshing(true);
     setAiProvider(aiModels[Math.floor(Math.random() * aiModels.length)]);
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
-    setIsRefreshing(false);
-  };
+    
+    const timeoutId = setTimeout(() => {
+      if (isMountedRef.current) {
+        setIsRefreshing(false);
+      }
+    }, 1500);
+    
+    return () => clearTimeout(timeoutId);
+  }, []);
   
   const handleFeedback = (id: string, feedback: 'positive' | 'negative') => {
     setInsights(prevInsights => 
