@@ -61,14 +61,9 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({ deal }) => {
   useEffect(() => {
     isMountedRef.current = true;
     
-    // Generate insights based on deal data
-    const generateInsights = async () => {
+    const generateInsights = () => {
       setIsLoading(true);
       
-      // Use ref for cleanup tracking instead of promise
-      timeoutRef.current = setTimeout(() => {
-        if (!isMountedRef.current) return;
-        
       const generatedInsights: Insight[] = [];
       
       // Add insights based on deal data
