@@ -1,0 +1,26 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Environment variables for production
+# These will be set in Netlify dashboard, but listed here for reference:
+# VITE_SUPABASE_URL
+# VITE_SUPABASE_ANON_KEY
+# VITE_OPENAI_API_KEY
+# VITE_GEMINI_API_KEY
+# VITE_GEMINI_MODEL
+# VITE_SENDGRID_API_KEY
+# VITE_FROM_EMAIL
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[dev]
+  command = "npm run dev"
+  port = 5173
+  publish = "dist"
