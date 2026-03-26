@@ -2,14 +2,20 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Enable Row Level Security on all tables
-ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE deals ENABLE ROW LEVEL SECURITY;
-ALTER TABLE automations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE communications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS contacts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS deals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS automations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS communications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS activities ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Allow public access to contacts" ON contacts;
+DROP POLICY IF EXISTS "Allow public access to deals" ON deals;
+DROP POLICY IF EXISTS "Allow public access to automations" ON automations;
+DROP POLICY IF EXISTS "Allow public access to tasks" ON tasks;
+DROP POLICY IF EXISTS "Allow public access to communications" ON communications;
+DROP POLICY IF EXISTS "Allow public access to activities" ON activities;
 DROP POLICY IF EXISTS "Users can only access their own contacts" ON contacts;
 DROP POLICY IF EXISTS "Users can only access their own deals" ON deals;
 DROP POLICY IF EXISTS "Users can only access their own automations" ON automations;
@@ -17,97 +23,30 @@ DROP POLICY IF EXISTS "Users can only access their own tasks" ON tasks;
 DROP POLICY IF EXISTS "Users can only access their own communications" ON communications;
 DROP POLICY IF EXISTS "Users can only access their own activities" ON activities;
 
--- Contacts table with user isolation
-CREATE TABLE IF NOT EXISTS contacts (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    email TEXT,
-    phone TEXT,
-    company TEXT,
-    title TEXT,
-    status TEXT DEFAULT 'lead',
-    value DECIMAL(10, 2) DEFAULT 0,
-    last_contact TIMESTAMP WITH TIME ZONE,
-    notes TEXT,
-    avatar_url TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Drop existing triggers if they exist
+DROP TRIGGER IF EXISTS update_contacts_updated_at ON contacts;
+DROP TRIGGER IF EXISTS update_deals_updated_at ON deals;
+DROP TRIGGER IF EXISTS update_automations_updated_at ON automations;
+DROP TRIGGER IF EXISTS update_tasks_updated_at ON tasks;
+DROP TRIGGER IF EXISTS update_user_preferences_updated_at ON user_preferences;
+DROP TRIGGER IF EXISTS update_user_storage_updated_at ON user_storage;
+DROP TRIGGER IF EXISTS set_contacts_user_id ON contacts;
+DROP TRIGGER IF EXISTS set_deals_user_id ON deals;
+DROP TRIGGER IF EXISTS set_automations_user_id ON automations;
+DROP TRIGGER IF EXISTS set_tasks_user_id ON tasks;
+DROP TRIGGER IF EXISTS set_communications_user_id ON communications;
+DROP TRIGGER IF EXISTS set_activities_user_id ON activities;
 
--- Deals table with user isolation
-CREATE TABLE IF NOT EXISTS deals (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    company TEXT,
-    value DECIMAL(10, 2) DEFAULT 0,
-    stage TEXT DEFAULT 'prospecting',
-    probability INTEGER DEFAULT 0,
-    expected_close_date TIMESTAMP WITH TIME ZONE,
-    contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
-    description TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Add user_id column to existing tables (if not exists)
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE deals ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE automations ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE communications ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
 
--- Automations table with user isolation
-CREATE TABLE IF NOT EXISTS automations (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    description TEXT,
-    type TEXT DEFAULT 'drip',
-    status TEXT DEFAULT 'draft',
-    progress INTEGER DEFAULT 0,
-    steps JSONB DEFAULT '[]'::jsonb,
-    deal_id UUID REFERENCES deals(id) ON DELETE CASCADE,
-    last_run TIMESTAMP WITH TIME ZONE,
-    next_run TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Tasks table with user isolation
-CREATE TABLE IF NOT EXISTS tasks (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    description TEXT,
-    due_date TIMESTAMP WITH TIME ZONE,
-    priority TEXT DEFAULT 'medium',
-    status TEXT DEFAULT 'pending',
-    deal_id UUID REFERENCES deals(id) ON DELETE CASCADE,
-    assigned_to TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Communications table with user isolation
-CREATE TABLE IF NOT EXISTS communications (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    type TEXT DEFAULT 'email',
-    subject TEXT,
-    content TEXT NOT NULL,
-    direction TEXT DEFAULT 'outbound',
-    deal_id UUID REFERENCES deals(id) ON DELETE CASCADE,
-    contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
-    created_by TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Activities table with user isolation
-CREATE TABLE IF NOT EXISTS activities (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    type TEXT NOT NULL,
-    entity_type TEXT NOT NULL,
-    entity_id UUID NOT NULL,
-    description TEXT NOT NULL,
-    metadata JSONB DEFAULT '{}'::jsonb,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Add avatar_url to contacts if not exists
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
 -- User preferences table
 CREATE TABLE IF NOT EXISTS user_preferences (
