@@ -408,10 +408,11 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
   };
 
   const getTemplateCapabilities = (template: any, deal: Deal) => {
+    const steps = template.steps || [];
     return {
-      hasEmailSteps: template.steps.some((step: any) => step.type === 'email'),
-      hasTaskSteps: template.steps.some((step: any) => step.type === 'task'),
-      hasCommunicationSteps: template.steps.some((step: any) => step.type === 'communication'),
+      hasEmailSteps: steps.some((step: any) => step.type === 'email'),
+      hasTaskSteps: steps.some((step: any) => step.type === 'task'),
+      hasCommunicationSteps: steps.some((step: any) => step.type === 'communication'),
       hasConditionalLogic: !!template.condition,
       hasStageTriggers: !!template.trigger?.startsWith('stage-'),
       hasDateTriggers: !!(template.trigger?.includes('days') || template.trigger?.includes('weekly') || template.trigger?.includes('milestone')),
@@ -1733,13 +1734,13 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
                     </div>
                     
                     <div className="space-y-3">
-                      {automation.steps.map((step, index) => {
+                      {automation.steps?.map((step, index) => {
                         const StepIcon = getStepIcon(step.type);
-                        
+
                         return (
                           <div key={step.id} className="flex items-start relative">
                             {/* Connector line between steps */}
-                            {index < automation.steps.length - 1 && (
+                            {index < (automation.steps?.length || 0) - 1 && (
                               <div className="absolute left-4 top-8 bottom-0 w-0.5 bg-gray-200"></div>
                             )}
                             
@@ -2082,7 +2083,7 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
                   <div className="mt-3 flex items-center justify-between">
                     <div className="flex items-center text-xs text-gray-500">
                       <Clock className="w-3 h-3 mr-1" />
-                      <span>{automation.steps.length} steps</span>
+                      <span>{automation.steps?.length || 0} steps</span>
                     </div>
 
                     <div className="flex space-x-2">
@@ -2108,7 +2109,7 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <h6 className="text-xs font-medium text-gray-700 uppercase mb-2">Steps Preview</h6>
                   <div className="space-y-2">
-                    {automation.steps.map((step, index) => {
+                    {automation.steps?.map((step, index) => {
                       const StepIcon = getStepIcon(step.type);
 
                       return (
@@ -2117,7 +2118,7 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
                             <StepIcon className="w-3 h-3 text-gray-600" />
                           </div>
                           <span className="text-xs text-gray-700">{step.name}</span>
-                          {index < automation.steps.length - 1 && (
+                          {index < (automation.steps?.length || 0) - 1 && (
                             <ArrowRight className="w-3 h-3 text-gray-400" />
                           )}
                         </div>

@@ -76,6 +76,7 @@ describe('AIEnhancedDealCard', () => {
         <AIEnhancedDealCard
           deal={mockFavoriteDeal}
           onClick={mockOnClick}
+          onToggleFavorite={mockOnToggleFavorite}
         />
       );
 
@@ -158,7 +159,8 @@ describe('AIEnhancedDealCard', () => {
         />
       );
 
-      const analyzeButton = screen.getByLabelText('Analyze deal with AI');
+      // Buttons are hidden by default (opacity-0), use hidden: true to find them
+      const analyzeButton = screen.getByLabelText('Analyze deal with AI', { hidden: true });
       await userEvent.click(analyzeButton);
 
       await waitFor(() => {
@@ -243,10 +245,11 @@ describe('AIEnhancedDealCard', () => {
         />
       );
 
-      expect(screen.getByLabelText('Analyze deal with AI')).toBeInTheDocument();
-      expect(screen.getByLabelText(`Add ${mockDeal.title} to favorites`)).toBeInTheDocument();
-      expect(screen.getByLabelText(`Edit ${mockDeal.title}`)).toBeInTheDocument();
-      expect(screen.getByLabelText(`More actions for ${mockDeal.title}`)).toBeInTheDocument();
+      // Buttons are hidden by default (opacity-0), use hidden: true to find them
+      expect(screen.getByLabelText('Analyze deal with AI', { hidden: true })).toBeInTheDocument();
+      expect(screen.getByLabelText(`Add ${mockDeal.title} to favorites`, { hidden: true })).toBeInTheDocument();
+      expect(screen.getByLabelText(`Edit ${mockDeal.title}`, { hidden: true })).toBeInTheDocument();
+      expect(screen.getByLabelText(`More actions for ${mockDeal.title}`, { hidden: true })).toBeInTheDocument();
     });
 
     it('has correct ARIA label for deal card', () => {
@@ -284,7 +287,8 @@ describe('AIEnhancedDealCard', () => {
         />
       );
 
-      const analyzeButton = screen.getByLabelText('Analyze deal with AI');
+      // Buttons are hidden by default (opacity-0), use hidden: true to find them
+      const analyzeButton = screen.getByLabelText('Analyze deal with AI', { hidden: true });
       expect(analyzeButton).toHaveAttribute('aria-busy', 'true');
     });
 
@@ -298,8 +302,9 @@ describe('AIEnhancedDealCard', () => {
         />
       );
 
-      const analyzeButton = screen.getByLabelText('Analyze deal with AI');
-      const favoriteButton = screen.getByLabelText(`Add ${mockDeal.title} to favorites`);
+      // Buttons are hidden by default (opacity-0), use hidden: true to find them
+      const analyzeButton = screen.getByLabelText('Analyze deal with AI', { hidden: true });
+      const favoriteButton = screen.getByLabelText(`Add ${mockDeal.title} to favorites`, { hidden: true });
 
       // Tab through elements
       analyzeButton.focus();
@@ -334,7 +339,8 @@ describe('AIEnhancedDealCard', () => {
         />
       );
 
-      const analyzeButton = screen.getByLabelText('Analyze deal with AI');
+      // Buttons are hidden by default (opacity-0), use hidden: true to find them
+      const analyzeButton = screen.getByLabelText('Analyze deal with AI', { hidden: true });
       expect(analyzeButton).toBeDisabled();
     });
   });
@@ -373,7 +379,8 @@ describe('AIEnhancedDealCard', () => {
         />
       );
 
-      const analyzeButton = screen.getByLabelText('Analyze deal with AI');
+      // Buttons are hidden by default (opacity-0), use hidden: true to find them
+      const analyzeButton = screen.getByLabelText('Analyze deal with AI', { hidden: true });
       await userEvent.click(analyzeButton);
 
       // Unmount while operation is in progress
@@ -397,7 +404,8 @@ describe('AIEnhancedDealCard', () => {
         />
       );
 
-      const analyzeButton = screen.getByLabelText('Analyze deal with AI');
+      // Buttons are hidden by default (opacity-0), use hidden: true to find them
+      const analyzeButton = screen.getByLabelText('Analyze deal with AI', { hidden: true });
       await userEvent.click(analyzeButton);
 
       await waitFor(() => {

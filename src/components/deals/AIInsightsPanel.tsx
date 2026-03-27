@@ -372,7 +372,7 @@ export const AIInsightsPanel: React.FC<AIInsightsPanelProps> = ({ deal }) => {
       </div>
       
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex items-center justify-center py-20" role="status" aria-label="Loading insights">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
         </div>
       ) : filteredInsights.length === 0 ? (
