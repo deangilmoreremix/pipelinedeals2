@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCRM Remote • Test Host (Module Federation Verifier)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .log { font-family: ui-monospace, monospace; font-size: 12px; }
+    .remote-container { min-height: 600px; border: 3px dashed #64748b; background: #f8fafc; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+  <div class="max-w-[1200px] mx-auto p-8">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-4xl font-semibold tracking-tighter">SmartCRM Remote Test Host</h1>
+        <p class="text-zinc-400 mt-1">Verifies full application Module Federation exposure (landing + deep links + props contract)</p>
+      </div>
+      <div class="text-right text-sm">
+        <div class="text-emerald-400 font-medium">✅ Target: app.smartcrm.vip host</div>
+        <div class="text-zinc-500">Uses @originjs/vite-plugin-federation + Vite 8 CSS patch</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Controls -->
+      <div class="lg:col-span-1 bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-6">
+        <div>
+          <div class="uppercase text-xs tracking-[1px] text-zinc-500 mb-2">1. Build the Remote</div>
+          <div class="text-sm text-zinc-400">Run in terminal:</div>
+          <code class="block bg-black p-3 rounded-xl text-emerald-400 text-xs mt-1">npm run build</code>
+          <div class="text-[10px] mt-2 text-amber-400">Then serve dist/ (e.g. <code class="bg-zinc-950 px-1">npx serve dist -p 4173</code>)</div>
+        </div>
+
+        <div>
+          <div class="uppercase text-xs tracking-[1px] text-zinc-500 mb-3">2. Mount Scenarios (click to test)</div>
+          
+          <div class="space-y-2">
+            <button onclick="mountRemote({})" 
+                    class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-950 rounded-2xl text-sm flex items-center gap-3">
+              <span class="font-medium">Default (Landing Page)</span>
+            </button>
+            
+            <button onclick="mountRemote({ initialRoute: '/pipeline' })" 
+                    class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-950 rounded-2xl text-sm flex items-center gap-3">
+              <span class="font-medium">Deep Link → /pipeline (bypass landing)</span>
+            </button>
+            
+            <button onclick="mountRemote({ initialRoute: '/contacts/123' })" 
+                    class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-950 rounded-2xl text-sm flex items-center gap-3">
+              <span class="font-medium">Deep Link → /contacts (opens modal)</span>
+            </button>
+            
+            <button onclick="mountRemote({ initialRoute: '/analytics', sharedData: { theme: 'dark', user: { name: 'Alex Rivera' } } })" 
+                    class="w-full text-left px-4 py-3 bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-950 rounded-2xl text-sm flex items-center gap-3">
+              <span class="font-medium">Dark theme + user + deep analytics</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div class="uppercase text-xs tracking-[1px] text-zinc-500 mb-2">3. Live Props</div>
+          <button onclick="mountRemote({ sharedData: { theme: 'dark' } })" class="text-xs px-3 py-1.5 bg-zinc-800 rounded-xl mr-2 mb-2">Force Dark</button>
+          <button onclick="mountRemote({ sharedData: { theme: 'light' } })" class="text-xs px-3 py-1.5 bg-zinc-800 rounded-xl mr-2 mb-2">Force Light</button>
+          <button onclick="unmountRemote()" class="text-xs px-3 py-1.5 bg-red-900/70 hover:bg-red-800 rounded-xl">Unmount</button>
+        </div>
+
+        <div class="pt-4 border-t border-zinc-800 text-[10px] text-zinc-500">
+          Events from onEvent() appear in the log below.<br>
+          The remote must render the <b>complete self-contained app</b> (not a widget).
+        </div>
+      </div>
+
+      <!-- Mount Target -->
+      <div class="lg:col-span-2">
+        <div class="flex items-center justify-between mb-2 px-1">
+          <div class="text-sm font-medium text-zinc-400">REMOTE MOUNT POINT (full app experience)</div>
+          <div id="mount-status" class="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">Not mounted</div>
+        </div>
+        <div id="remote-root" class="remote-container rounded-3xl overflow-hidden bg-white shadow-inner"></div>
+      </div>
+    </div>
+
+    <!-- Event Log -->
+    <div class="mt-8">
+      <div class="flex justify-between items-center mb-2 px-1">
+        <div class="uppercase text-xs tracking-[1px] text-zinc-500">Live onEvent / Lifecycle Log</div>
+        <button onclick="clearLog()" class="text-xs text-zinc-400 hover:text-white">Clear</button>
+      </div>
+      <div id="event-log" class="log bg-zinc-900 border border-zinc-800 h-48 overflow-auto p-4 rounded-2xl text-emerald-400/90 text-xs whitespace-pre-wrap"></div>
+    </div>
+
+    <div class="mt-6 text-[10px] text-center text-zinc-600">
+      This page simulates the SmartCRM host (app.smartcrm.vip). Real hosts use the exact same contract via dynamic <code>import("smartcrm_remote/SmartCRMApp")</code>.
+    </div>
+  </div>
+
+  <script type="module">
+    // Tailwind script already loaded above via CDN
+    let root = null;
+    let currentReactRoot = null;
+    let eventLogEl = null;
+
+    function logEvent(msg, data = null) {
+      if (!eventLogEl) eventLogEl = document.getElementById('event-log');
+      const time = new Date().toLocaleTimeString();
+      const entry = `[${time}] ${msg}` + (data ? '\n' + JSON.stringify(data, null, 2) : '') + '\n\n';
+      eventLogEl.textContent = entry + eventLogEl.textContent;
+      eventLogEl.scrollTop = 0;
+    }
+
+    window.clearLog = () => {
+      if (eventLogEl) eventLogEl.textContent = '';
+    };
+
+    // Mock onEvent handler
+    function createMockHandlers(label) {
+      return {
+        onEvent: (event) => {
+          logEvent(`${label} onEvent`, event);
+          console.log('%c[TEST-HOST] onEvent received', 'color:#a1a1aa', event);
+        },
+        onDataUpdate: (data) => {
+          logEvent(`${label} onDataUpdate`, data);
+        }
+      };
+    }
+
+    async function mountRemote(props = {}) {
+      const container = document.getElementById('remote-root');
+      const status = document.getElementById('mount-status');
+      
+      unmountRemote(); // clean previous
+
+      status.textContent = 'Mounting SmartCRMApp...';
+      status.className = 'text-xs px-2 py-0.5 rounded bg-amber-900 text-amber-400';
+
+      try {
+        // === PRIMARY TEST MODE: Dynamic remote simulation ===
+        // In a real MF host you would do:
+        //   const { default: SmartCRMApp } = await import('http://.../remoteEntry.js').then(m => m.get('./SmartCRMApp'))
+        //
+        // For this standalone verifier we dynamically import the SOURCE component (identical contract)
+        // so you get instant feedback without a second server. After `npm run build` the same component
+        // is what the real remoteEntry exposes.
+        const { default: SmartCRMApp } = await import('./src/SmartCRMApp.tsx');
+
+        const React = (await import('https://esm.sh/react@18.3.1')).default;
+        const { createRoot } = await import('https://esm.sh/react-dom@18.3.1/client');
+
+        // Merge mock handlers
+        const finalProps = {
+          ...props,
+          ...createMockHandlers('SmartCRM Remote'),
+          sharedData: {
+            ...(props.sharedData || {}),
+            // Add realistic host data
+            isAuthenticated: true,
+            session: { id: 'sess_test_001' }
+          }
+        };
+
+        const element = React.createElement(SmartCRMApp, finalProps);
+        
+        currentReactRoot = createRoot(container);
+        currentReactRoot.render(element);
+
+        status.textContent = '✅ Mounted (full self-contained remote)';
+        status.className = 'text-xs px-2 py-0.5 rounded bg-emerald-900 text-emerald-400';
+        
+        logEvent('Remote mounted successfully with props', { 
+          hasInitialRoute: !!props.initialRoute, 
+          route: props.initialRoute || 'default → landing',
+          theme: props.sharedData?.theme || 'inherited'
+        });
+
+        // Diagnostic
+        console.log('%c[TEST-HOST] SmartCRM remote fully mounted. Props:', 'color:#22c55e', finalProps);
+
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = `<div class="p-8 text-red-400 font-mono text-sm">Failed to load remote:<br>${err.message}<br><br>Tip: Make sure you are running this from a Vite dev server (npm run dev) so TSX imports work, or build + adjust paths.</div>`;
+        status.textContent = '❌ Mount failed';
+        status.className = 'text-xs px-2 py-0.5 rounded bg-red-900 text-red-400';
+        logEvent('Mount error', { error: err.message });
+      }
+    }
+
+    window.mountRemote = mountRemote;
+
+    window.unmountRemote = () => {
+      const container = document.getElementById('remote-root');
+      const status = document.getElementById('mount-status');
+      
+      if (currentReactRoot) {
+        currentReactRoot.unmount();
+        currentReactRoot = null;
+      }
+      container.innerHTML = '';
+      status.textContent = 'Unmounted';
+      status.className = 'text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-400';
+      logEvent('Remote unmounted');
+    };
+
+    // Auto-mount default scenario on load (shows the rich landing page)
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        logEvent('Test host ready. Auto-mounting default (landing) scenario...');
+        mountRemote({});
+      }, 420);
+    });
+
+    // Keyboard helpers
+    document.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === '?') {
+        e.preventDefault();
+        mountRemote({ initialRoute: '/contacts/123' });
+      }
+    });
+
+    console.log('%c[SmartCRM Test Host] Ready. Press ? for quick deep-link test or use the buttons.', 'color:#64748b');
+  </script>
+</body>
+</html>

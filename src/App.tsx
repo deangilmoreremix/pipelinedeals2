@@ -8,6 +8,10 @@ import { useKeyboardShortcuts, globalShortcuts } from './hooks/useKeyboardShortc
 import ErrorBoundary from './components/ErrorBoundary';
 import { setupGlobalErrorHandling } from './utils/errorHandling';
 
+// LEGACY App - always renders the complete full application (no landing page).
+// Used for backward compat federation export "./App" and direct imports.
+// For new Module Federation usage with landing + remote props, import { default as SmartCRMApp } from './SmartCRMApp'
+
 function AppContent() {
   useKeyboardShortcuts(globalShortcuts);
   const { isInitialized } = useTheme();
@@ -28,7 +32,7 @@ function AppContent() {
         </div>
       </header>
 
-      {/* Main content */}
+      {/* Main content - full app */}
       <Pipeline />
     </div>
   );
@@ -54,3 +58,7 @@ function App() {
 }
 
 export default App;
+
+// Re-export SmartCRMApp for hosts that want the new remote root with props/landing support
+export { default as SmartCRMApp } from './SmartCRMApp';
+export type { SmartCRMRemoteProps } from './SmartCRMApp';
