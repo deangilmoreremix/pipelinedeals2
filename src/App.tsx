@@ -8,9 +8,9 @@ import { useKeyboardShortcuts, globalShortcuts } from './hooks/useKeyboardShortc
 import ErrorBoundary from './components/ErrorBoundary';
 import { setupGlobalErrorHandling } from './utils/errorHandling';
 
-// LEGACY App - always renders the complete full application (no landing page).
-// Used for backward compat federation export "./App" and direct imports.
-// For new Module Federation usage with landing + remote props, import { default as SmartCRMApp } from './SmartCRMApp'
+// LEGACY App — always renders the complete full application.
+// Exposed as ./App for backward-compatible federation consumption.
+// For the primary SmartCRMRemoteProps-enabled export, use ./SmartCRMApp
 
 function AppContent() {
   useKeyboardShortcuts(globalShortcuts);
@@ -59,6 +59,6 @@ function App() {
 
 export default App;
 
-// Re-export SmartCRMApp for hosts that want the new remote root with props/landing support
+// Re-export SmartCRMApp for hosts that want the props-enabled remote root
 export { default as SmartCRMApp } from './SmartCRMApp';
 export type { SmartCRMRemoteProps } from './SmartCRMApp';
