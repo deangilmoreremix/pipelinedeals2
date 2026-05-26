@@ -27,10 +27,32 @@ export default defineConfig({
     federation({
       rollingVersion: 'vite-8',
       exposes: {
-        './SmartCRMApp': './src/SmartCRMApp.tsx',
         './App': './src/App.tsx',
+        './SmartCRMApp': './src/SmartCRMApp.tsx',
       },
-      shared: ['react', 'react-dom', 'zustand'],
+      shared: {
+        react: {
+          import: 'react',
+          shareKey: 'react',
+          shareScope: 'default',
+          singleton: true,
+          requiredVersion: '^18.3.1',
+        },
+        'react-dom': {
+          import: 'react-dom',
+          shareKey: 'react-dom',
+          shareScope: 'default',
+          singleton: true,
+          requiredVersion: '^18.3.1',
+        },
+        zustand: {
+          import: 'zustand',
+          shareKey: 'zustand',
+          shareScope: 'default',
+          singleton: true,
+          requiredVersion: '^4.4.7',
+        },
+      },
     }),
     fixFederationCssForVite8(),
   ],
@@ -40,7 +62,10 @@ export default defineConfig({
   cssCodeSplit: false,
   target: 'esnext',
   minify: false,
+  base: './',
   build: {
     cssCodeSplit: false,
+    outDir: 'dist',
+    assetsDir: 'assets',
   },
 });

@@ -20,6 +20,7 @@ import {
   List, 
   Eye,
   EyeOff,
+  Zap,
 } from 'lucide-react';
 
 import { emitEvent } from '../services/eventBus';
@@ -36,8 +37,9 @@ const Pipeline: React.FC = () => {
   const [showAddDealModal, setShowAddDealModal] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
-const [analyzingDealId, setAnalyzingDealId] = useState<string | null>(null);
-   const aiResearch = useAIResearch();
+  const [analyzingDealId, setAnalyzingDealId] = useState<string | null>(null);
+  const [enrichingDealId, setEnrichingDealId] = useState<string | null>(null);
+  const aiResearch = useAIResearch();
 
   // Filter deals based on search and filters - optimized with memoization
   const filteredDeals = useMemo(() => {

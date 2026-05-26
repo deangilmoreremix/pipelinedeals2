@@ -19,10 +19,9 @@
   <body>
     <div class="test-controls">
       <h2>SmartCRM Remote Test Host</h2>
-      <button onclick="loadApp('')">Landing Page</button>
-      <button onclick="loadApp('/pipeline')">Pipeline</button>
-      <button onclick="loadApp('/contacts/123')">Contact Detail</button>
-      <button onclick="loadApp('/deals/new')">New Deal</button>
+      <button onclick="loadApp('App')">Load App</button>
+      <button onclick="loadApp('SmartCRMApp')">Load SmartCRMApp</button>
+      <button onclick="unmount()">Unmount</button>
     </div>
     <div id="root"></div>
     <div class="log-container" id="log"></div>
@@ -39,7 +38,8 @@
         onDataUpdate: (data) => console.log('[Test Host] Data update:', data)
       };
 
-      let appContainer = null;
+      let appContainer = document.getElementById('root');
+      let currentRoot = null;
 
       function log(message) {
         const logDiv = document.getElementById('log');
@@ -50,51 +50,57 @@
         logDiv.scrollTop = logDiv.scrollHeight;
       }
 
-      window.loadApp = async function(initialRoute) {
-        log(`Loading app with initialRoute: "${initialRoute}"`);
+      window.unmount = function() {
+        if (currentRoot) {
+          currentRoot.unmount();
+          currentRoot = null;
+          log('Unmounted');
+        }
+      };
 
-        const props = { ...mockProps, initialRoute };
+      window.loadApp = async function(componentName) {
+        log(`Loading ${componentName}...`);
 
         try {
+          // Set remote flag before loading
+          window.__SMARTCRM_REMOTE__ = true;
+
+          // Initialize the shared scope first
           const module = await import('./dist/assets/remoteEntry.js');
-          log('Module loaded successfully');
+          log('remoteEntry.js loaded');
 
-          if (appContainer) {
-            appContainer.innerHTML = '';
-          } else {
-            appContainer = document.getElementById('root');
+          // Initialize shared dependencies
+          await module.init({
+            react: { singleton: true, requiredVersion: '^18.3.1' },
+            'react-dom': { singleton: true, requiredVersion: '^18.3.1' },
+            zustand: { singleton: true, requiredVersion: '^4.4.7' }
+          });
+          log('Shared dependencies initialized');
+
+          // Get the remote module
+          const RemoteModule = await module.get('./' + componentName);
+          log(`${componentName} module retrieved`);
+
+          if (currentRoot) {
+            currentRoot.unmount();
           }
 
-          if (module.SmartCRMApp) {
-            log('Mounting SmartCRMApp');
-            const { createRoot } = await import('react-dom/client');
-            const { createElement } = await import('react');
-            const React = await import('react');
+          currentRoot = null;
+          appContainer.innerHTML = '';
 
-            const root = createRoot(appContainer);
-            root.render(createElement(module.SmartCRMApp, props));
-            log('SmartCRMApp mounted');
-          } else if (module.App) {
-            log('Mounting App');
-            const { createRoot } = await import('react-dom/client');
-            const { createElement } = await import('react');
-            const React = await import('react');
+          const { createRoot } = await import('react-dom/client');
+          const { createElement } = await import('react');
 
-            const root = createRoot(appContainer);
-            root.render(createElement(module.App, props));
-            log('App mounted');
-          } else {
-            log('ERROR: No SmartCRMApp or App found in module');
-            console.log('Available exports:', Object.keys(module));
-          }
+          currentRoot = createRoot(appContainer);
+          currentRoot.render(createElement(RemoteModule, mockProps));
+          log(`${componentName} mounted successfully`);
         } catch (err) {
-          log(`ERROR: ${err.message}`);
+          log(`ERROR: ${err.message || err}`);
           console.error(err);
         }
       };
 
       log('Test host initialized');
-      loadApp('');
     </script>
   </body>
 </html>
