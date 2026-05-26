@@ -28,6 +28,9 @@ import {
   Brain,
 } from 'lucide-react';
 
+import { emitEvent } from '../services/eventBus';
+import { recordStageChange } from '../services/dealStageTracker';
+
 const Pipeline: React.FC = () => {
   const [deals, setDeals] = useState<Record<string, Deal>>(mockDeals);
   const [columns, setColumns] = useState<Record<string, PipelineColumn>>(mockColumns);
@@ -151,23 +154,30 @@ const Pipeline: React.FC = () => {
         dealIds: destDealIds,
       };
 
-      // Update deal stage
-      const updatedDeal = {
-        ...deals[draggableId],
-        stage: destination.droppableId as Deal['stage'],
-        updatedAt: new Date(),
-      };
-
-      setDeals({
-        ...deals,
-        [draggableId]: updatedDeal,
-      });
-
-      setColumns({
-        ...columns,
-        [newSourceColumn.id]: newSourceColumn,
-        [newDestColumn.id]: newDestColumn,
-      });
+// Update deal stage
+       const updatedDeal = {
+         ...deals[draggableId],
+         stage: destination.droppableId as Deal['stage'],
+         updatedAt: new Date(),
+       };
+ 
+       // Record stage change timestamp and notify host
+       const lastStageChangeAt = recordStageChange(draggableId, source.droppableId, destination.droppableId);
+       updatedDeal['lastStageChangeAt'] = lastStageChangeAt;
+ 
+       setDeals(prevDeals => ({
+         ...prevDeals,
+         [draggableId]: updatedDeal,
+       }));
+ 
+       setColumns(prevCols => ({
+         ...prevCols,
+         [newSourceColumn.id]: newSourceColumn,
+         [newDestColumn.id]: newDestColumn,
+       }));
+ 
+       // Emit event for host integration
+       emitEvent('stage-change', { dealId: draggableId, from: source.droppableId, to: destination.droppableId });
     }
   };
 
@@ -308,6 +318,16 @@ const Pipeline: React.FC = () => {
   };
 
   const stageValues = calculateStageValues(filteredDeals, filteredColumns);
+
+// Attach time-in-stage labels to deals for use in cards and detail views
+Object.keys(deals).forEach(id => {
+  const d = deals[id] as any;
+  if (d) {
+    if (d.lastStageChangeAt && typeof d.lastStageChangeAt === 'string') {
+      d.lastStageChangeAt = new Date(d.lastStageChangeAt);
+    }
+  }
+});
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

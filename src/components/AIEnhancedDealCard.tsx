@@ -226,6 +226,9 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
   const analyzing = isAnalyzing || localAnalyzing;
   const enriching = localEnriching;
 
+  // Compute time in stage label if available
+  const timeInStage = (deal as any).lastStageChangeAt ? new Date((deal as any).lastStageChangeAt) : deal.createdAt;
+
   return (
     <div
       ref={cardRef}
@@ -374,34 +377,37 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             </div>
           </div>
           
-          {/* Deal Score Display */}
-          <div className="flex flex-col items-center space-y-2">
-            <div className={`h-12 w-12 rounded-full ${getScoreColor(deal.probability)} text-white flex items-center justify-center font-bold text-lg shadow-lg ring-2 ring-white relative`}>
-              {deal.probability}%
-              
-              {/* Analysis Loading Indicator */}
-              {analyzing && (
-                <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              )}
-              
-              {/* AI Enhanced Indicator */}
-              {deal.probability > 70 && (
-                <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-yellow-300" />
-              )}
-              
-              {/* Favorite Badge */}
-              {deal.isFavorite && (
-                <div className="absolute -top-1 -left-1 h-4 w-4 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg ring-1 ring-white">
-                  <Heart className="w-2 h-2" />
-                </div>
-              )}
+            {/* Deal Score Display */}
+            <div className="flex flex-col items-center space-y-2">
+              <div className={`h-12 w-12 rounded-full ${getScoreColor(deal.probability)} text-white flex items-center justify-center font-bold text-lg shadow-lg ring-2 ring-white relative`}>
+                {deal.probability}%
+                
+                {/* Analysis Loading Indicator */}
+                {analyzing && (
+                  <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center">
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+                
+                {/* AI Enhanced Indicator */}
+                {deal.probability > 70 && (
+                  <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-yellow-300" />
+                )}
+                
+                {/* Favorite Badge */}
+                {deal.isFavorite && (
+                  <div className="absolute -top-1 -left-1 h-4 w-4 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg ring-1 ring-white">
+                    <Heart className="w-2 h-2" />
+                  </div>
+                )}
+              </div>
+              <span className="text-xs text-gray-500 font-medium">
+                {analyzing ? 'Analyzing...' : 'Probability'}
+              </span>
+
+              {/* Time-in-stage badge */}
+              <span className="text-xs text-gray-500 mt-1">{timeInStage ? new Date(timeInStage).toLocaleDateString() : ''}</span>
             </div>
-            <span className="text-xs text-gray-500 font-medium">
-              {analyzing ? 'Analyzing...' : 'Probability'}
-            </span>
-          </div>
         </div>
 
         {/* AI Enhancement Notice - New Feature */}

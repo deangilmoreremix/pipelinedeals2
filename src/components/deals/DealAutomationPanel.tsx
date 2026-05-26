@@ -96,12 +96,64 @@ export const DealAutomationPanel: React.FC<DealAutomationPanelProps> = ({ deal }
     loadAutomations();
     setupRealTimeUpdates();
 
+    // Listen for stage-change events emitted by the Pipeline
+    const handler = (e: Event) => {
+      try {
+        // Support both CustomEvent dispatched by emitEvent and raw event objects
+        const detail = (e as CustomEvent).detail || (e as any);
+        if (!detail || !detail.type) return;
+
+        if (detail.type === 'stage-change' || detail.type === 'stage-change-notification') {
+          const payload = detail.payload || detail;
+          const { dealId, from, to } = payload || {};
+
+          // Find automations triggered by stage-changed or stage-<stage> triggers
+          const matched = [...activeAutomations, ...availableAutomations].filter(a => {
+            if (!a.trigger) return false;
+            if (a.trigger === 'stage-changed') return true;
+            if (a.trigger === `stage-${to}`) return true;
+            return false;
+          });
+
+          matched.forEach(async (automation) => {
+            // Idempotency guard: prevent rapid repeated triggers
+            // Use localStorage-based guard for simplicity
+            const guardKey = `automation-triggered:${automation.id}:${deal.id}`;
+            const last = localStorage.getItem(guardKey);
+            const now = Date.now();
+            if (last && (now - Number(last) < 5000)) {
+              // Skip if triggered in last 5s
+              return;
+            }
+            try {
+              localStorage.setItem(guardKey, String(now));
+            } catch (err) {}
+
+            // Trigger execution for this automation
+            try {
+              await triggerWorkflowExecution(automation.id, 'triggered-by-stage-change');
+              // Optionally update automation state
+              setActiveAutomations(prev => prev.map(a => a.id === automation.id ? { ...a, lastRun: new Date() } : a));
+              console.log('Triggered automation due to stage-change:', automation.id, { dealId, from, to });
+            } catch (err) {
+              console.error('Failed to trigger automation', automation.id, err);
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Event handler error in DealAutomationPanel', err);
+      }
+    };
+
+    window.addEventListener('smartcrm:remote:event', handler as EventListener);
+
     return () => {
+      window.removeEventListener('smartcrm:remote:event', handler as EventListener);
       if (realTimeSubscription) {
         realTimeSubscription.unsubscribe();
       }
     };
-  }, [deal.id]);
+  }, [deal.id, activeAutomations, availableAutomations, realTimeSubscription]);
 
   const loadAutomations = async () => {
     try {

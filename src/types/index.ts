@@ -26,11 +26,13 @@ export interface Deal {
     facebook?: string;
     website?: string;
   };
-  lastEnrichment?: {
-    confidence: number;
-    aiProvider?: string;
-    timestamp?: Date;
-  };
+   lastEnrichment?: {
+     confidence: number;
+     aiProvider?: string;
+     timestamp?: Date;
+   };
+   // Timestamp for when the deal last changed stage (used for time-in-stage calculation)
+   lastStageChangeAt?: Date;
   attachments?: Array<{
     id: string;
     name: string;

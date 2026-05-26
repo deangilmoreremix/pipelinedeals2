@@ -13,6 +13,10 @@ const DealDetail: React.FC<DealDetailProps> = ({ dealId, onClose }) => {
   // Fetch contacts to provide the linked contact to DealDetailView
   const { contacts } = useContactStore();
   const deal = mockDeals[dealId];
+  // Ensure we parse lastStageChangeAt if present
+  if (deal && (deal as any).lastStageChangeAt && typeof (deal as any).lastStageChangeAt === 'string') {
+    (deal as any).lastStageChangeAt = new Date((deal as any).lastStageChangeAt);
+  }
   
   // Find the associated contact if available
   const contactData: Contact | null = deal?.contactId 
