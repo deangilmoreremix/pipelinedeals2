@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { PersonalizationProvider } from './contexts/PersonalizationContext';
 import { GamificationProvider } from './contexts/GamificationContext';
 import Pipeline from './components/Pipeline';
@@ -17,7 +17,7 @@ export interface SmartCRMRemoteProps {
   onDataUpdate?: (data: unknown) => void;
 }
 
-function SmartCRMAppContent({ sharedData, onEvent, onDataUpdate }: SmartCRMRemoteProps) {
+function SmartCRMAppContent({ sharedData, onEvent }: SmartCRMRemoteProps) {
   useKeyboardShortcuts(globalShortcuts);
 
   useEffect(() => {

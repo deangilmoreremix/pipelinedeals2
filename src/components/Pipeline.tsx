@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import AIEnhancedDealCard from './AIEnhancedDealCard';
 import DealAnalytics from './DealAnalytics';
@@ -15,17 +15,11 @@ import { mockDeals, mockColumns, columnOrder, calculateStageValues } from '../da
 import { Deal, PipelineColumn } from '../types';
 import { 
   Search, 
-  Filter, 
   Plus, 
-  BarChart3, 
-  Users, 
   Grid3X3, 
   List, 
-  Settings,
-  Zap,
   Eye,
   EyeOff,
-  Brain,
 } from 'lucide-react';
 
 import { emitEvent } from '../services/eventBus';
@@ -42,9 +36,8 @@ const Pipeline: React.FC = () => {
   const [showAddDealModal, setShowAddDealModal] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
-  const [analyzingDealId, setAnalyzingDealId] = useState<string | null>(null);
-  const [enrichingDealId, setEnrichingDealId] = useState<string | null>(null);
-  const aiResearch = useAIResearch();
+const [analyzingDealId, setAnalyzingDealId] = useState<string | null>(null);
+   const aiResearch = useAIResearch();
 
   // Filter deals based on search and filters - optimized with memoization
   const filteredDeals = useMemo(() => {
@@ -315,19 +308,17 @@ const Pipeline: React.FC = () => {
     } catch (error) {
       console.error('Failed to find new image:', error);
     }
-  };
+};
 
-  const stageValues = calculateStageValues(filteredDeals, filteredColumns);
-
-// Attach time-in-stage labels to deals for use in cards and detail views
-Object.keys(deals).forEach(id => {
-  const d = deals[id] as any;
-  if (d) {
-    if (d.lastStageChangeAt && typeof d.lastStageChangeAt === 'string') {
-      d.lastStageChangeAt = new Date(d.lastStageChangeAt);
+  // Attach time-in-stage labels to deals for use in cards and detail views
+  Object.keys(deals).forEach(id => {
+    const d = deals[id] as Deal;
+    if (d) {
+      if (d.lastStageChangeAt && typeof d.lastStageChangeAt === 'string') {
+        d.lastStageChangeAt = new Date(d.lastStageChangeAt);
+      }
     }
-  }
-});
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

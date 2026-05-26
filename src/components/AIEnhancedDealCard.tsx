@@ -4,19 +4,11 @@ import { formatTimeInStage } from '../utils/timeInStage';
 import { CustomizableAIToolbar } from './ui/CustomizableAIToolbar';
 import { 
   Calendar, 
-  DollarSign, 
-  User, 
-  Building2, 
-  AlertTriangle, 
-  CheckCircle, 
   Clock,
-  Zap,
-  TrendingUp,
   Edit,
   Camera,
   Database,
   Globe,
-  ExternalLink,
   ArrowRight,
   Activity,
   Plus,
@@ -65,14 +57,18 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [localAnalyzing, setLocalAnalyzing] = useState(false);
   const [localEnriching, setLocalEnriching] = useState(false);
-  const [isFinding, setIsFinding] = useState(false);
-  const [showCustomFields, setShowCustomFields] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+const [isFinding, setIsFinding] = useState(false);
+   const [showCustomFields, setShowCustomFields] = useState(false);
+   const cardRef = useRef<HTMLDivElement>(null);
 
-  // New state to track AI enrichment status
-  const [lastEnrichment, setLastEnrichment] = useState<any>(
-    deal.lastEnrichment || (deal.probability > 75 ? { confidence: deal.probability } : null)
-  );
+   // New state to track AI enrichment status
+   const [lastEnrichment, setLastEnrichment] = useState<{
+     confidence: number;
+     aiProvider?: string;
+     timestamp?: Date;
+   } | null>(
+     deal.lastEnrichment || (deal.probability > 75 ? { confidence: deal.probability } : null)
+   );
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', { 
@@ -227,8 +223,8 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
   const analyzing = isAnalyzing || localAnalyzing;
   const enriching = localEnriching;
 
-  // Compute time in stage label if available
-  const timeInStage = (deal as any).lastStageChangeAt ? new Date((deal as any).lastStageChangeAt) : deal.createdAt;
+// Compute time in stage label if available
+   const timeInStage = deal.lastStageChangeAt ? new Date(deal.lastStageChangeAt) : deal.createdAt;
 
   return (
     <div
@@ -430,7 +426,7 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
 
         {/* Stale Deal Indicator */}
         {(() => {
-          const info = formatTimeInStage((deal as any).lastStageChangeAt);
+          const info = formatTimeInStage(deal.lastStageChangeAt);
           if (info.days !== null && info.days > 14) {
             return (
               <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-[10px] font-semibold rounded border border-yellow-300 flex items-center gap-0.5">
