@@ -11,7 +11,7 @@ import { FloatingActionPanel } from './ui/FloatingActionPanel';
 import { AdvancedFilter } from './ui/AdvancedFilter';
 import AddDealModal from './deals/AddDealModal';
 import DealDetail from './DealDetail';
-import { mockDeals, mockColumns, columnOrder, calculateStageValues } from '../data/mockDeals';
+import { mockDeals, mockColumns, columnOrder } from '../data/mockDeals';
 import { Deal, PipelineColumn } from '../types';
 import { 
   Search, 
@@ -44,7 +44,7 @@ const [analyzingDealId, setAnalyzingDealId] = useState<string | null>(null);
     const searchTermLower = searchTerm.toLowerCase();
 
     return Object.fromEntries(
-      Object.entries(deals).filter(([_, deal]) => {
+      Object.entries(deals).filter(([key, deal]) => {
         // Apply search filter
         if (searchTerm) {
           const titleMatch = deal.title.toLowerCase().includes(searchTermLower);
