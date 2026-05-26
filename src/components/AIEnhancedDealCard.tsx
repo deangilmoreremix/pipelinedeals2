@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Deal } from '../types';
+import { formatTimeInStage } from '../utils/timeInStage';
 import { CustomizableAIToolbar } from './ui/CustomizableAIToolbar';
 import { 
   Calendar, 
@@ -426,6 +427,20 @@ const AIEnhancedDealCard: React.FC<AIEnhancedDealCardProps> = ({
             </div>
           </div>
         )}
+
+        {/* Stale Deal Indicator */}
+        {(() => {
+          const info = formatTimeInStage((deal as any).lastStageChangeAt);
+          if (info.days !== null && info.days > 14) {
+            return (
+              <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-yellow-100 text-yellow-800 text-[10px] font-semibold rounded border border-yellow-300 flex items-center gap-0.5">
+                <Clock className="w-3 h-3" />
+                {info.label} stale
+              </span>
+            );
+          }
+          return null;
+        })()}
 
         {/* Priority Level */}
         <div className="flex items-center justify-center space-x-2 mb-4">

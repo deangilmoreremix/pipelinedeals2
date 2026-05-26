@@ -1,5 +1,23 @@
 return (
     <>
+      {(() => {
+        const info = formatTimeInStage((deal as any).lastStageChangeAt || deal.createdAt);
+        if (info.days !== null) {
+          return (
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
+              info.days > 14
+                ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                : info.days > 7
+                ? 'bg-orange-100 text-orange-800 border-orange-300'
+                : 'bg-green-100 text-green-800 border-green-300'
+            }`}>
+              <Clock className="w-3 h-3 inline mr-1" />
+              In stage: {info.label}
+            </span>
+          );
+        }
+        return null;
+      })()}
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" onClick={onClose}></div>
 
@@ -111,6 +129,27 @@ return (
                         {new Date(deal.updatedAt).toLocaleDateString()}
                       </p>
                     </div>
+
+                    {/* Time in Stage */}
+                    {(() => {
+                      const from = (deal as any).lastStageChangeAt || deal.createdAt;
+                      const info = formatTimeInStage(from);
+                      if (info.days !== null) {
+                        return (
+                          <div className="flex items-center justify-between py-2 border-t border-gray-100 dark:border-gray-600">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">Time in Stage</p>
+                            <span className={`text-sm font-semibold ${
+                              info.days > 14 ? 'text-yellow-600 dark:text-yellow-400' :
+                              info.days > 7 ? 'text-orange-600 dark:text-orange-400' :
+                              'text-green-600 dark:text-green-400'
+                            }`}>
+                              {info.label}
+                            </span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
 

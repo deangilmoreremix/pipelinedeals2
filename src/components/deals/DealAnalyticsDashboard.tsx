@@ -155,18 +155,18 @@ export const DealAnalyticsDashboard: React.FC<DealAnalyticsDashboardProps> = ({ 
           <h4 className="text-sm font-medium text-gray-500">Deal Value</h4>
           <p className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(deal.value)}</p>
         </div>
-        
+
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
           <div className="flex items-center justify-between mb-3">
             <div className="p-2 rounded-lg bg-purple-100">
               <Target className="h-5 w-5 text-purple-600" />
             </div>
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              deal.probability > probabilityData[0].value 
-                ? 'bg-green-100 text-green-700' 
+              deal.probability > probabilityData[0].value
+                ? 'bg-green-100 text-green-700'
                 : 'bg-red-100 text-red-700'
             }`}>
-              {deal.probability > probabilityData[0].value 
+              {deal.probability > probabilityData[0].value
                 ? <ArrowUp className="inline h-3 w-3 mr-1" />
                 : <ArrowDown className="inline h-3 w-3 mr-1" />
               }
@@ -176,7 +176,7 @@ export const DealAnalyticsDashboard: React.FC<DealAnalyticsDashboardProps> = ({ 
           <h4 className="text-sm font-medium text-gray-500">Win Probability</h4>
           <p className="text-2xl font-bold text-gray-900 mt-1">{deal.probability}%</p>
         </div>
-        
+
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
           <div className="flex items-center justify-between mb-3">
             <div className="p-2 rounded-lg bg-green-100">
@@ -188,24 +188,24 @@ export const DealAnalyticsDashboard: React.FC<DealAnalyticsDashboardProps> = ({ 
           </div>
           <h4 className="text-sm font-medium text-gray-500">Expected Close</h4>
           <p className="text-2xl font-bold text-gray-900 mt-1">
-            {deal.dueDate 
+            {deal.dueDate
               ? deal.dueDate.toLocaleDateString(undefined, {month: 'short', day: 'numeric'})
               : 'N/A'}
           </p>
         </div>
-        
+
         <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
           <div className="flex items-center justify-between mb-3">
             <div className="p-2 rounded-lg bg-yellow-100">
               <Clock className="h-5 w-5 text-yellow-600" />
             </div>
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              dealAgeDays > avgSimilarDealCloseTime 
-                ? 'bg-yellow-100 text-yellow-700' 
+              dealAgeDays > avgSimilarDealCloseTime
+                ? 'bg-yellow-100 text-yellow-700'
                 : 'bg-green-100 text-green-700'
             }`}>
-              {dealAgeDays > avgSimilarDealCloseTime 
-                ? `+${dealAgeDays - avgSimilarDealCloseTime}d` 
+              {dealAgeDays > avgSimilarDealCloseTime
+                ? `+${dealAgeDays - avgSimilarDealCloseTime}d`
                 : 'On track'
               }
             </span>
@@ -214,6 +214,33 @@ export const DealAnalyticsDashboard: React.FC<DealAnalyticsDashboardProps> = ({ 
           <p className="text-2xl font-bold text-gray-900 mt-1">{dealAgeDays} days</p>
         </div>
       </div>
+
+      {/* Weighted Pipeline Value - Enhancement to existing analytics */}
+      {deal && (() => {
+        const dealsArr = [deal];
+        const weightedValue = dealsArr.reduce((sum: number, d: any) => {
+          const prob = (d.probability || 0) / 100;
+          return sum + (d.value || 0) * prob;
+        }, 0);
+        const totalValue = dealsArr.reduce((sum: number, d: any) => sum + (d.value || 0), 0);
+        const count = dealsArr.length;
+
+        return (
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Weighted Pipeline Value</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">${weightedValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {count} deal{(count !== 1) ? 's' : ''} · {(weightedValue / (totalValue || 1) * 100).toFixed(0)}% of total
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       
       {/* Win Probability Factors */}
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">

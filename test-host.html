@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartCRM Remote - Test Host</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: system-ui, -apple-system, sans-serif; }
+      #root { min-height: 100vh; }
+      .test-controls { padding: 20px; background: #f5f5f5; border-bottom: 1px solid #ddd; }
+      .test-controls h2 { margin-bottom: 10px; }
+      .test-controls button { margin-right: 10px; padding: 8px 16px; cursor: pointer; }
+      .test-controls button.active { background: #007bff; color: white; border: none; }
+      .log-container { max-height: 200px; overflow-y: auto; padding: 10px; background: #1a1a1a; color: #0f0; font-family: monospace; font-size: 12px; }
+      .log-entry { margin: 4px 0; }
+    </style>
+  </head>
+  <body>
+    <div class="test-controls">
+      <h2>SmartCRM Remote Test Host</h2>
+      <button onclick="loadApp('')">Landing Page</button>
+      <button onclick="loadApp('/pipeline')">Pipeline</button>
+      <button onclick="loadApp('/contacts/123')">Contact Detail</button>
+      <button onclick="loadApp('/deals/new')">New Deal</button>
+    </div>
+    <div id="root"></div>
+    <div class="log-container" id="log"></div>
+
+    <script type="module">
+      const mockProps = {
+        sharedData: {
+          user: { id: 'test-user', name: 'Test User', email: 'test@example.com' },
+          isAuthenticated: true,
+          theme: 'light'
+        },
+        initialRoute: '',
+        onEvent: (event) => console.log('[Test Host] Received event:', event),
+        onDataUpdate: (data) => console.log('[Test Host] Data update:', data)
+      };
+
+      let appContainer = null;
+
+      function log(message) {
+        const logDiv = document.getElementById('log');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        logDiv.appendChild(entry);
+        logDiv.scrollTop = logDiv.scrollHeight;
+      }
+
+      window.loadApp = async function(initialRoute) {
+        log(`Loading app with initialRoute: "${initialRoute}"`);
+
+        const props = { ...mockProps, initialRoute };
+
+        try {
+          const module = await import('./dist/assets/remoteEntry.js');
+          log('Module loaded successfully');
+
+          if (appContainer) {
+            appContainer.innerHTML = '';
+          } else {
+            appContainer = document.getElementById('root');
+          }
+
+          if (module.SmartCRMApp) {
+            log('Mounting SmartCRMApp');
+            const { createRoot } = await import('react-dom/client');
+            const { createElement } = await import('react');
+            const React = await import('react');
+
+            const root = createRoot(appContainer);
+            root.render(createElement(module.SmartCRMApp, props));
+            log('SmartCRMApp mounted');
+          } else if (module.App) {
+            log('Mounting App');
+            const { createRoot } = await import('react-dom/client');
+            const { createElement } = await import('react');
+            const React = await import('react');
+
+            const root = createRoot(appContainer);
+            root.render(createElement(module.App, props));
+            log('App mounted');
+          } else {
+            log('ERROR: No SmartCRMApp or App found in module');
+            console.log('Available exports:', Object.keys(module));
+          }
+        } catch (err) {
+          log(`ERROR: ${err.message}`);
+          console.error(err);
+        }
+      };
+
+      log('Test host initialized');
+      loadApp('');
+    </script>
+  </body>
+</html>

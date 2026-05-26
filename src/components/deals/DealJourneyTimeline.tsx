@@ -1,8 +1,9 @@
 import React from 'react';
 import { Deal } from '../../types';
-import { 
-  ArrowRight, Calendar, CheckCircle, Clock, Phone, Mail, 
-  FileText, Target, AlertCircle, DollarSign, Plus, User, 
+import { formatTimeInStage } from '../../utils/timeInStage';
+import {
+  ArrowRight, Calendar, CheckCircle, Clock, Phone, Mail,
+  FileText, Target, AlertCircle, DollarSign, Plus, User,
   Briefcase, Award, MessageSquare, Building2
 } from 'lucide-react';
 
@@ -155,8 +156,29 @@ export const DealJourneyTimeline: React.FC<DealJourneyTimelineProps> = ({ deal }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Deal Journey</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-gray-900">Deal Journey</h3>
+          {(() => {
+            const info = formatTimeInStage((deal as any).lastStageChangeAt);
+            if (info.days !== null && info.days >= 0) {
+              return (
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
+                  info.days > 14
+                    ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                    : info.days > 7
+                    ? 'bg-orange-100 text-orange-800 border-orange-300'
+                    : 'bg-green-100 text-green-800 border-green-300'
+                }`}>
+                  <Clock className="w-3 h-3 inline mr-1" />
+                  In stage: {info.label}
+                </span>
+              );
+            }
+            return null;
+          })()}
+        </div>
         <button className="text-sm text-blue-600 font-medium hover:text-blue-800 flex items-center">
           <Target className="w-4 h-4 mr-1" /> Set Milestones
         </button>

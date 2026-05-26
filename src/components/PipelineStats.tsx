@@ -6,13 +6,17 @@ interface PipelineStatsProps {
   totalDeals?: number;
   averageDealSize?: number;
   conversionRate?: number;
+  deals?: any[];
+  filteredDeals?: any[];
 }
 
 const PipelineStats: React.FC<PipelineStatsProps> = ({
   totalValue = 380000,
   totalDeals = 6,
   averageDealSize = 63333,
-  conversionRate = 16.7
+  conversionRate = 16.7,
+  deals,
+  filteredDeals
 }) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', { 
@@ -59,29 +63,60 @@ const PipelineStats: React.FC<PipelineStatsProps> = ({
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {stats.map((stat) => (
-        <div key={stat.name} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className={`p-3 rounded-lg ${stat.color}`}>
-                <stat.icon className="h-6 w-6 text-white" />
+    <div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {stats.map((stat) => (
+          <div key={stat.name} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className={`p-3 rounded-lg ${stat.color}`}>
+                  <stat.icon className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div className={`inline-flex items-baseline px-2.5 py-0.5 rounded-full text-sm font-medium ${
+                stat.changeType === 'positive'
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {stat.change}
               </div>
             </div>
-            <div className={`inline-flex items-baseline px-2.5 py-0.5 rounded-full text-sm font-medium ${
-              stat.changeType === 'positive' 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {stat.change}
+            <div className="mt-4">
+              <h3 className="text-sm font-medium text-gray-500">{stat.name}</h3>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
             </div>
           </div>
-          <div className="mt-4">
-            <h3 className="text-sm font-medium text-gray-500">{stat.name}</h3>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
+
+      {/* Weighted Expected Value - Enhancement */}
+      {(() => {
+        const dealsArr = Object.values(filteredDeals || deals || {});
+        const weightedValue = (dealsArr as any[]).reduce((sum: number, d: any) => {
+          return sum + ((d.value || 0) * ((d.probability || 0) / 100));
+        }, 0);
+
+        if (weightedValue > 0) {
+          return (
+            <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg border border-green-200 dark:border-green-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-300">Weighted Pipeline</p>
+                  <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                    ${weightedValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    vs ${totalValue.toLocaleString()} face value
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
     </div>
   );
 };

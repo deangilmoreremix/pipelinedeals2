@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Deal } from '../types';
+import { formatTimeInStage } from '../utils/timeInStage';
 import { Contact } from '../types/contact';
 import { useAIResearch } from '../services/aiResearchService';
 import { CustomizableAIToolbar } from './ui/CustomizableAIToolbar';
