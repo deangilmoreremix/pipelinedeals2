@@ -33,8 +33,18 @@ Commits made:
    - Purpose: subscribe to window custom events 'smartcrm:remote:event' and trigger automations for event.type === 'stage-change' or automations triggered by 'stage-changed' etc. Added idempotency guard using localStorage to prevent rapid duplicate triggers.
 
 9) Modified src/components/AIEnhancedDealCard.tsx
-   - Purpose: display time-in-stage small label under the probability badge using lastStageChangeAt if available.
-   - Changes: compute timeInStage from deal.lastStageChangeAt or createdAt and render the date label.
+    - Purpose: display time-in-stage small label under the probability badge using lastStageChangeAt if available.
+    - Changes: compute timeInStage from deal.lastStageChangeAt or createdAt and render the date label.
+    - Added stale-deal indicator (>14 days) with clock icon on cards.
+
+10) Modified vite.config.ts
+    - Purpose: configured Module Federation plugin to expose ./SmartCRMApp and ./App as federation modules.
+    - Features: shared react, react-dom, zustand; Vite 8 CSS workaround plugin included.
+
+11) Added src/SmartCRMApp.tsx
+    - Purpose: main federation entry component for remote integration.
+    - Props: sharedData.theme, initialRoute, onEvent, onDataUpdate.
+    - Renders full Pipeline app with header and providers.
 
 Notes about constraints compliance:
 - No new views or panels were added. All UI changes are minor enhancements to existing DealCard and DealDetail.
