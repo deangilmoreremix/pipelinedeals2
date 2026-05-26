@@ -1,6 +1,7 @@
 import { formatTimeInStage } from '../utils/timeInStage';
+import { Deal } from '../types';
 
-export function attachTimeInStage(deal: any) {
+export function attachTimeInStage(deal: Deal) {
   // Ensure lastStageChangeAt is a Date if present in string form
   if (deal.lastStageChangeAt && typeof deal.lastStageChangeAt === 'string') {
     deal.lastStageChangeAt = new Date(deal.lastStageChangeAt);
